@@ -1,5 +1,5 @@
 Assembler report for or1420SingleCore
-Tue Mar 12 16:58:50 2024
+Tue Mar 12 20:08:39 2024
 Quartus Prime Version 23.1std.0 Build 991 11/28/2023 SC Lite Edition
 
 
@@ -38,7 +38,7 @@ https://fpgasoftware.intel.com/eula.
 +---------------------------------------------------------------+
 ; Assembler Summary                                             ;
 +-----------------------+---------------------------------------+
-; Assembler Status      ; Successful - Tue Mar 12 16:58:50 2024 ;
+; Assembler Status      ; Successful - Tue Mar 12 20:08:39 2024 ;
 ; Revision Name         ; or1420SingleCore                      ;
 ; Top-level Entity Name ; or1420SingleCore                      ;
 ; Family                ; Cyclone IV E                          ;
@@ -93,8 +93,8 @@ https://fpgasoftware.intel.com/eula.
 +----------------+-------------------------------+
 ; Option         ; Setting                       ;
 +----------------+-------------------------------+
-; JTAG usercode  ; 0x00B0E44D                    ;
-; Checksum       ; 0x00B0E44D                    ;
+; JTAG usercode  ; 0x00B21396                    ;
+; Checksum       ; 0x00B21396                    ;
 +----------------+-------------------------------+
 
 
@@ -118,14 +118,14 @@ Info: Running Quartus Prime Assembler
     Info: Intel and sold by Intel or its authorized distributors.  Please
     Info: refer to the applicable agreement for further details, at
     Info: https://fpgasoftware.intel.com/eula.
-    Info: Processing started: Tue Mar 12 16:58:48 2024
+    Info: Processing started: Tue Mar 12 20:08:37 2024
 Info: Command: quartus_asm or1420SingleCore
 Warning (18236): Number of processors has not been specified which may cause overloading on shared machines.  Set the global assignment NUM_PARALLEL_PROCESSORS in your QSF to an appropriate value for best performance.
 Info (115031): Writing out detailed assembly data for power analysis
 Info (115030): Assembler is generating device programming files
 Info: Quartus Prime Assembler was successful. 0 errors, 1 warning
-    Info: Peak virtual memory: 389 megabytes
-    Info: Processing ended: Tue Mar 12 16:58:50 2024
+    Info: Peak virtual memory: 395 megabytes
+    Info: Processing ended: Tue Mar 12 20:08:39 2024
     Info: Elapsed time: 00:00:02
     Info: Total CPU time (on all processors): 00:00:02
 
