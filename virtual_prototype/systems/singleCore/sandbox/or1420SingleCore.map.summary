@@ -1,0 +1,14 @@
+Analysis & Synthesis Status : Successful - Tue Mar 12 12:08:20 2024
+Quartus Prime Version : 23.1std.0 Build 991 11/28/2023 SC Lite Edition
+Revision Name : or1420SingleCore
+Top-level Entity Name : or1420SingleCore
+Family : Cyclone IV E
+Total logic elements : 14,224
+    Total combinational functions : 12,333
+    Dedicated logic registers : 6,179
+Total registers : 6179
+Total pins : 81
+Total virtual pins : 0
+Total memory bits : 274,560
+Embedded Multiplier 9-bit elements : 9
+Total PLLs : 1
