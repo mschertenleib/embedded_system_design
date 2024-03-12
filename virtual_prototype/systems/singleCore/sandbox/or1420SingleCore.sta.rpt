@@ -1,5 +1,5 @@
 Timing Analyzer report for or1420SingleCore
-Tue Mar 12 12:10:12 2024
+Tue Mar 12 16:58:58 2024
 Quartus Prime Version 23.1std.0 Build 991 11/28/2023 SC Lite Edition
 
 
@@ -156,14 +156,14 @@ https://fpgasoftware.intel.com/eula.
 ; Number detected on machine ; 8           ;
 ; Maximum allowed            ; 4           ;
 ;                            ;             ;
-; Average used               ; 1.56        ;
+; Average used               ; 1.60        ;
 ; Maximum used               ; 4           ;
 ;                            ;             ;
 ; Usage by Processor         ; % Time Used ;
 ;     Processor 1            ; 100.0%      ;
-;     Processor 2            ;  21.4%      ;
-;     Processor 3            ;  17.8%      ;
-;     Processor 4            ;  16.8%      ;
+;     Processor 2            ;  23.7%      ;
+;     Processor 3            ;  18.7%      ;
+;     Processor 4            ;  17.9%      ;
 +----------------------------+-------------+
 
 
@@ -172,7 +172,7 @@ https://fpgasoftware.intel.com/eula.
 +---------------------------+--------+--------------------------+
 ; SDC File Path             ; Status ; Read at                  ;
 +---------------------------+--------+--------------------------+
-; ../scripts/clocks_sdc.tcl ; OK     ; Tue Mar 12 12:10:07 2024 ;
+; ../scripts/clocks_sdc.tcl ; OK     ; Tue Mar 12 16:58:52 2024 ;
 +---------------------------+--------+--------------------------+
 
 
@@ -4993,7 +4993,7 @@ Info: Running Quartus Prime Timing Analyzer
     Info: Intel and sold by Intel or its authorized distributors.  Please
     Info: refer to the applicable agreement for further details, at
     Info: https://fpgasoftware.intel.com/eula.
-    Info: Processing started: Tue Mar 12 12:10:05 2024
+    Info: Processing started: Tue Mar 12 16:58:51 2024
 Info: Command: quartus_sta or1420SingleCore
 Info: qsta_default_script.tcl version: #1
 Warning (18236): Number of processors has not been specified which may cause overloading on shared machines.  Set the global assignment NUM_PARALLEL_PROCESSORS in your QSF to an appropriate value for best performance.
@@ -5154,9 +5154,9 @@ Info (332146): Worst-case minimum pulse width slack is 3.150
 Info (332102): Design is not fully constrained for setup requirements
 Info (332102): Design is not fully constrained for hold requirements
 Info: Quartus Prime Timing Analyzer was successful. 0 errors, 7 warnings
-    Info: Peak virtual memory: 650 megabytes
-    Info: Processing ended: Tue Mar 12 12:10:12 2024
+    Info: Peak virtual memory: 643 megabytes
+    Info: Processing ended: Tue Mar 12 16:58:58 2024
     Info: Elapsed time: 00:00:07
-    Info: Total CPU time (on all processors): 00:00:09
+    Info: Total CPU time (on all processors): 00:00:10
 
 

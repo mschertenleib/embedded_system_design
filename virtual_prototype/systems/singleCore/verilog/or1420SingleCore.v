@@ -443,7 +443,7 @@ module or1420SingleCore ( input wire         clock12MHz,
   wire [31:0] s_camAddressData;
   wire [3:0] s_camByteEnables;
   wire [7:0] s_camBurstSize;
-  
+
   camera #(.customInstructionId(8'd7),
            .clockFrequencyInHz(74250000)) camIf
           (.clock(s_systemClock),
@@ -484,7 +484,7 @@ module or1420SingleCore ( input wire         clock12MHz,
 
   screens #(.baseAddress(32'h50000020),
             .pixelClockFrequency(27'd74250000),
-            .cursorBlinkFrequency(27'd1)) hdmi 
+            .cursorBlinkFrequency(27'd1)) hdmi
            (.pixelClockIn(s_pixelClock),
             .clock(s_systemClock),
             .reset(s_reset),
@@ -603,13 +603,13 @@ module or1420SingleCore ( input wire         clock12MHz,
    */
  wire [31:0] s_busRequests, s_busGrants;
  wire        s_arbBusError, s_arbEndTransaction;
- 
+
  assign s_busRequests[31] = s_cpu1DcacheRequestBus;
  assign s_busRequests[30] = s_cpu1IcacheRequestBus;
  assign s_busRequests[29] = s_hdmiRequestBus;
  assign s_busRequests[28] =  s_camReqBus;
  assign s_busRequests[27:0] = 29'd0;
- 
+
  assign s_cpu1DcacheBusAccessGranted = s_busGrants[31];
  assign s_cpu1IcacheBusAccessGranted = s_busGrants[30];
  assign s_hdmiBusgranted             = s_busGrants[29];
@@ -628,7 +628,7 @@ module or1420SingleCore ( input wire         clock12MHz,
                       .dataValidIn(s_dataValid),
                       .addressDataIn(s_addressData[31:30]),
                       .burstSizeIn(s_burstSize));
- 
+
   /*
    *
    * Here we define the bus architecture
@@ -646,5 +646,23 @@ module or1420SingleCore ( input wire         clock12MHz,
                              s_flashDataValid | s_camDataValid;
  assign s_busy             = s_sdramBusy;
  assign s_burstSize        = s_cpu1BurstSize | s_hdmiBurstSize | s_camBurstSize;
- 
+
+
+  /*
+   *
+   * Here we define the profiling custom instruction
+   *
+   */
+ profileCi #(.customId(8'h08)) profile (
+    .start(/*start indicator of the uC*/),
+    .clock(s_systemClock),
+    .reset(s_cpuReset),
+    .stall(/*to be connected to cpu1*/),
+    .busIdle(s_busIdle),
+    .valueA(s_cpu1CiDataA),
+    .valueB(s_cpu1CiDataB),
+    .ciN(s_cpu1CiN),
+    .done(/*to be or'ed with s_cpu1CiDone*/),
+    .result(/*to be or'ed with s_cpu1CiResult*/));
+
 endmodule

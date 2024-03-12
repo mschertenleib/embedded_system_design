@@ -1,5 +1,5 @@
 Flow report for or1420SingleCore
-Tue Mar 12 12:10:12 2024
+Tue Mar 12 16:58:58 2024
 Quartus Prime Version 23.1std.0 Build 991 11/28/2023 SC Lite Edition
 
 
@@ -41,7 +41,7 @@ https://fpgasoftware.intel.com/eula.
 +-------------------------------------------------------------------------------------+
 ; Flow Summary                                                                        ;
 +------------------------------------+------------------------------------------------+
-; Flow Status                        ; Successful - Tue Mar 12 12:10:04 2024          ;
+; Flow Status                        ; Successful - Tue Mar 12 16:58:50 2024          ;
 ; Quartus Prime Version              ; 23.1std.0 Build 991 11/28/2023 SC Lite Edition ;
 ; Revision Name                      ; or1420SingleCore                               ;
 ; Top-level Entity Name              ; or1420SingleCore                               ;
@@ -65,7 +65,7 @@ https://fpgasoftware.intel.com/eula.
 +-------------------+---------------------+
 ; Option            ; Setting             ;
 +-------------------+---------------------+
-; Start date & time ; 03/12/2024 12:07:44 ;
+; Start date & time ; 03/12/2024 16:56:24 ;
 ; Main task         ; Compilation         ;
 ; Revision Name     ; or1420SingleCore    ;
 +-------------------+---------------------+
@@ -76,7 +76,7 @@ https://fpgasoftware.intel.com/eula.
 +-----------------------+-----------------------------+---------------+-------------+------------+
 ; Assignment Name       ; Value                       ; Default Value ; Entity Name ; Section Id ;
 +-----------------------+-----------------------------+---------------+-------------+------------+
-; COMPILER_SIGNATURE_ID ; 91769633060.171024166412797 ; --            ; --          ; --         ;
+; COMPILER_SIGNATURE_ID ; 91769633008.171025898419027 ; --            ; --          ; --         ;
 +-----------------------+-----------------------------+---------------+-------------+------------+
 
 
@@ -85,11 +85,11 @@ https://fpgasoftware.intel.com/eula.
 +----------------------+--------------+-------------------------+---------------------+------------------------------------+
 ; Module Name          ; Elapsed Time ; Average Processors Used ; Peak Virtual Memory ; Total CPU Time (on all processors) ;
 +----------------------+--------------+-------------------------+---------------------+------------------------------------+
-; Analysis & Synthesis ; 00:00:34     ; 1.0                     ; 531 MB              ; 00:00:44                           ;
-; Fitter               ; 00:01:40     ; 1.1                     ; 1213 MB             ; 00:02:47                           ;
+; Analysis & Synthesis ; 00:00:36     ; 1.0                     ; 521 MB              ; 00:00:50                           ;
+; Fitter               ; 00:01:44     ; 1.1                     ; 1199 MB             ; 00:03:00                           ;
 ; Assembler            ; 00:00:02     ; 1.0                     ; 389 MB              ; 00:00:02                           ;
-; Timing Analyzer      ; 00:00:07     ; 1.6                     ; 650 MB              ; 00:00:09                           ;
-; Total                ; 00:02:23     ; --                      ; --                  ; 00:03:42                           ;
+; Timing Analyzer      ; 00:00:07     ; 1.6                     ; 643 MB              ; 00:00:10                           ;
+; Total                ; 00:02:29     ; --                      ; --                  ; 00:04:02                           ;
 +----------------------+--------------+-------------------------+---------------------+------------------------------------+
 
 

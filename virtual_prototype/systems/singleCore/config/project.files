@@ -1,3 +1,5 @@
+../../../modules/profile/verilog/profileCi.v
+../../../modules/profile/verilog/counter.v
 ../../../modules/bios/verilog/bios1_rom.v
 ../../../modules/bios/verilog/bios.v
 ../../../modules/bus_arbiter/verilog/busArbiter.v
