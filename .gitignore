@@ -1,3 +1,5 @@
 compile_commands.json
 *.Identifier
+build-debug/
+build-release/
 
