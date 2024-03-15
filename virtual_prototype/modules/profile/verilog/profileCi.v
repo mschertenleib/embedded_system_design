@@ -13,36 +13,68 @@ module profileCi #(
     output wire [31:0] result
 );
 
-  wire [3:0] counterEnables;
-  wire [3:0] counterResets;
+  wire cycleCounterEnable;
+  wire stallCounterEnable;
+  wire busIdleCounterEnable;
 
-  assign counterEnables[0] = (valueB[0] == 1'b1 && valueB[4] == 1'b0) ? 1'b1 : 1'b0;
-  assign counterEnables[1] = (valueB[1] == 1'b1 && valueB[5] == 1'b0 && stall == 1'b1) ? 1'b1 : 1'b0;
-  assign counterEnables[2] = (valueB[2] == 1'b1 && valueB[6] == 1'b0 && busIdle == 1'b1) ? 1'b1 : 1'b0;
-  assign counterEnables[3] = (valueB[3] == 1'b1 && valueB[7] == 1'b0) ? 1'b1 : 1'b0;
-  assign counterResets[0] = valueB[8];
-  assign counterResets[1] = valueB[9];
-  assign counterResets[2] = valueB[10];
-  assign counterResets[3] = valueB[11];
+  // FIXME: I can't see how this would work
+  assign cycleCounterEnable = (valueB[4] == 1'b1) ? 1'b0 :
+                          (valueB[0] == 1'b1) ? 1'b1 :
+                          cycleCounterEnable;
+  assign stallCounterEnable = (valueB[5] == 1'b1) ? 1'b0 :
+                          (valueB[1] == 1'b1) ? 1'b1 :
+                          stallCounterEnable;
+  assign busIdleCounterEnable = (valueB[6] == 1'b1) ? 1'b0 :
+                            (valueB[2] == 1'b1) ? 1'b1 :
+                            busIdleCounterEnable;
 
-  reg [127:0] counterValues;
+  wire cycleCounterReset;
+  wire stallCounterReset;
+  wire busIdleCounterReset;
+  assign cycleCounterReset   = valueB[8];
+  assign stallCounterReset   = valueB[9];
+  assign busIdleCounterReset = valueB[10];
+
+  reg [31:0] cycleCounterValue;
+  reg [31:0] stallCounterValue;
+  reg [31:0] busIdleCounterValue;
 
   counter #(
       .WIDTH(32)
-  ) counters[3:0] (
-      .reset(counterResets),
+  ) cycleCounter (
+      .reset(cycleCounterReset),
       .clock(clock),
-      .enable(counterEnables),
+      .enable(cycleCounterEnable),
       .direction(1'b1),
-      .counterValue(counterValues)
+      .counterValue(cycleCounterValue)
+  );
+
+  counter #(
+      .WIDTH(32)
+  ) stallCounter (
+      .reset(stallCounterReset),
+      .clock(clock),
+      .enable(stallCounterEnable & stall),
+      .direction(1'b1),
+      .counterValue(stallCounterValue)
+  );
+
+  counter #(
+      .WIDTH(32)
+  ) busIdleCounter (
+      .reset(busIdleCounterReset),
+      .clock(clock),
+      .enable(busIdleCounterEnable & busIdle),
+      .direction(1'b1),
+      .counterValue(busIdleCounterValue)
   );
 
   assign result = (ciN == customId && start == 1'b1) ?
-    (valueA[1:0] == 2'd0 ? counterValues[31:0] :
-    (valueA[1:0] == 2'd1 ? counterValues[63:32] :
-    (valueA[1:0] == 2'd2 ? counterValues[95:64] :
-                           counterValues[127:96])))
-                           : 32'd0;
+    ((valueA[1:0] == 2'd0) ? cycleCounterValue :
+     (valueA[1:0] == 2'd1) ? stallCounterValue :
+     (valueA[1:0] == 2'd2) ? busIdleCounterValue :
+                             cycleCounterValue)
+    : 32'd0;
 
   assign done = (ciN == customId && start == 1'b1) ? 1'b1 : 1'b0;
 
