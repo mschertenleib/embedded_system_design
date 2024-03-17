@@ -12,6 +12,7 @@ module profileCi #(
     output wire done,
     output wire [31:0] result
 );
+  reg [2:0] enableLatch;
 
   wire cycleCounterEnable;
   wire stallCounterEnable;
@@ -20,13 +21,13 @@ module profileCi #(
   // FIXME: I can't see how this would work
   assign cycleCounterEnable = (valueB[4] == 1'b1) ? 1'b0 :
                           (valueB[0] == 1'b1) ? 1'b1 :
-                          cycleCounterEnable;
+                          enableLatch[0];
   assign stallCounterEnable = (valueB[5] == 1'b1) ? 1'b0 :
                           (valueB[1] == 1'b1) ? 1'b1 :
-                          stallCounterEnable;
+                          enableLatch[1];
   assign busIdleCounterEnable = (valueB[6] == 1'b1) ? 1'b0 :
                             (valueB[2] == 1'b1) ? 1'b1 :
-                            busIdleCounterEnable;
+                            enableLatch[2];
 
   wire cycleCounterReset;
   wire stallCounterReset;
@@ -35,9 +36,9 @@ module profileCi #(
   assign stallCounterReset   = valueB[9];
   assign busIdleCounterReset = valueB[10];
 
-  reg [31:0] cycleCounterValue;
-  reg [31:0] stallCounterValue;
-  reg [31:0] busIdleCounterValue;
+  wire [31:0] cycleCounterValue;
+  wire [31:0] stallCounterValue;
+  wire [31:0] busIdleCounterValue;
 
   counter #(
       .WIDTH(32)
@@ -77,6 +78,12 @@ module profileCi #(
     : 32'd0;
 
   assign done = (ciN == customId && start == 1'b1) ? 1'b1 : 1'b0;
+
+  always @(posedge clock) begin
+    enableLatch[0] = cycleCounterEnable;
+    enableLatch[1] = stallCounterEnable;
+    enableLatch[2] = busIdleCounterEnable;
+  end
 
 endmodule
 
