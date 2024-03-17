@@ -78,8 +78,7 @@ int main() {
         grayscale[line * camParams.nrOfPixelsPerLine + pixel] = gray;
       }
     }
+    cycles = read_counter(COUNTER_CYCLES);
+    printf("Cycles: %lu\n", cycles);
   }
-
-  cycles = read_counter(COUNTER_CYCLES);
-  printf("Cycles: %lu\n", cycles);
 }
