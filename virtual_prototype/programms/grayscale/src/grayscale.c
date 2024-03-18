@@ -7,19 +7,23 @@
 typedef enum {
   COUNTER_CYCLES = 0,
   COUNTER_STALL = 1,
-  COUNTER_BUS_IDLE = 2
+  COUNTER_BUS_IDLE = 2,
+  COUNTER_CYCLES_2 = 3
 } CounterType;
 
 typedef enum {
   ENABLE_CYCLES = 0x001,
   ENABLE_STALL = 0x002,
   ENABLE_BUS_IDLE = 0x004,
+  ENABLE_CYCLES_2 = 0x008,
   DISABLE_CYCLES = 0x010,
   DISABLE_STALL = 0x020,
   DISABLE_BUS_IDLE = 0x040,
+  DISABLE_CYCLES_2 = 0x080,
   RESET_CYCLES = 0x100,
   RESET_STALL = 0x200,
-  RESET_BUS_IDLE = 0x400
+  RESET_BUS_IDLE = 0x400,
+  RESET_CYCLES_2 = 0x800
 } CounterControlBits;
 
 static uint32_t read_counter(CounterType counterId) {
@@ -45,28 +49,29 @@ int main() {
   printf("Initialising camera (this takes up to 3 seconds)!\n");
   camParams = initOv7670(VGA);
   printf("Done!\n");
-  printf("NrOfPixels : %d\n", camParams.nrOfPixelsPerLine);
+  printf("NrOfPixels : %lu\n", camParams.nrOfPixelsPerLine);
   result = (camParams.nrOfPixelsPerLine <= 320)
                ? camParams.nrOfPixelsPerLine | 0x80000000
                : camParams.nrOfPixelsPerLine;
   vga[0] = swap_u32(result);
-  printf("NrOfLines  : %d\n", camParams.nrOfLinesPerImage);
+  printf("NrOfLines  : %lu\n", camParams.nrOfLinesPerImage);
   result = (camParams.nrOfLinesPerImage <= 240)
                ? camParams.nrOfLinesPerImage | 0x80000000
                : camParams.nrOfLinesPerImage;
   vga[1] = swap_u32(result);
-  printf("PCLK (kHz) : %d\n", camParams.pixelClockInkHz);
-  printf("FPS        : %d\n", camParams.framesPerSecond);
+  printf("PCLK (kHz) : %lu\n", camParams.pixelClockInkHz);
+  printf("FPS        : %lu\n", camParams.framesPerSecond);
   uint32_t *rgb = (uint32_t *)&rgb565[0];
   uint32_t grayPixels;
   vga[2] = swap_u32(2);
   vga[3] = swap_u32((uint32_t)&grayscale[0]);
 
-  control_counters(ENABLE_CYCLES | ENABLE_STALL | ENABLE_BUS_IDLE);
-
   while (1) {
     uint32_t *gray = (uint32_t *)&grayscale[0];
     takeSingleImageBlocking((uint32_t)&rgb565[0]);
+    control_counters(RESET_CYCLES | RESET_BUS_IDLE | RESET_STALL | RESET_CYCLES_2);
+    control_counters(ENABLE_CYCLES | ENABLE_STALL | ENABLE_BUS_IDLE | ENABLE_CYCLES_2);
+    //start of conversion
     for (int line = 0; line < camParams.nrOfLinesPerImage; line++) {
       for (int pixel = 0; pixel < camParams.nrOfPixelsPerLine; pixel++) {
         uint16_t rgb =
@@ -78,7 +83,10 @@ int main() {
         grayscale[line * camParams.nrOfPixelsPerLine + pixel] = gray;
       }
     }
+    control_counters(DISABLE_CYCLES | DISABLE_BUS_IDLE | DISABLE_STALL | DISABLE_CYCLES_2);
+    stall = read_counter(COUNTER_STALL);
+    idle = read_counter(COUNTER_BUS_IDLE);
     cycles = read_counter(COUNTER_CYCLES);
-    printf("Cycles: %lu\n", cycles);
+    printf("Cycles: %lu Stall: %lu Bus Idle: %lu\n", cycles,stall,idle);
   }
 }
