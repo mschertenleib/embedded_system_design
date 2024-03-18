@@ -103,7 +103,7 @@ module profileCi #(
     ((valueA[1:0] == 2'd0) ? cycleCounterValue :
      (valueA[1:0] == 2'd1) ? stallCounterValue :
      (valueA[1:0] == 2'd2) ? busIdleCounterValue :
-                             cycleCounterValue)
+                             cycleCounter2Value)
     : 32'd0;
 
   assign done = (ciN == customId && start == 1'b1) ? 1'b1 : 1'b0;

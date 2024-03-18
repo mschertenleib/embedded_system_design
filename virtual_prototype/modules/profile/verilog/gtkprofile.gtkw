@@ -1,0 +1,168 @@
+[*]
+[*] GTKWave Analyzer v3.3.104 (w)1999-2020 BSI
+[*] Mon Mar 18 16:09:43 2024
+[*]
+[dumpfile] "/home/gilles/Desktop/MA2/Emb_Sys_design/embedded_system_design/virtual_prototype/modules/profile/verilog/Profile_Signals.vcd"
+[dumpfile_mtime] "Mon Mar 18 15:29:14 2024"
+[dumpfile_size] 8391
+[savefile] "/home/gilles/Desktop/MA2/Emb_Sys_design/embedded_system_design/virtual_prototype/modules/profile/verilog/gtkprofile.gtkw"
+[timestart] 513
+[size] 3688 2022
+[pos] -1 -1
+*-5.000000 650 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] profileTestbench.
+[treeopen] profileTestbench.DUT.
+[sst_width] 360
+[signals_width] 430
+[sst_expanded] 1
+[sst_vpaned_height] 615
+@28
+profileTestbench.DUT.clock
+profileTestbench.DUT.reset
+@22
+profileTestbench.DUT.ciN[7:0]
+@28
+profileTestbench.DUT.start
+profileTestbench.DUT.stall
+profileTestbench.DUT.busIdle
+@200
+-INTERFACE
+@c00024
+[color] 5
+profileTestbench.DUT.valueA[31:0]
+@28
+(0)profileTestbench.DUT.valueA[31:0]
+(1)profileTestbench.DUT.valueA[31:0]
+(2)profileTestbench.DUT.valueA[31:0]
+(3)profileTestbench.DUT.valueA[31:0]
+(4)profileTestbench.DUT.valueA[31:0]
+(5)profileTestbench.DUT.valueA[31:0]
+(6)profileTestbench.DUT.valueA[31:0]
+(7)profileTestbench.DUT.valueA[31:0]
+(8)profileTestbench.DUT.valueA[31:0]
+(9)profileTestbench.DUT.valueA[31:0]
+(10)profileTestbench.DUT.valueA[31:0]
+(11)profileTestbench.DUT.valueA[31:0]
+(12)profileTestbench.DUT.valueA[31:0]
+(13)profileTestbench.DUT.valueA[31:0]
+(14)profileTestbench.DUT.valueA[31:0]
+(15)profileTestbench.DUT.valueA[31:0]
+(16)profileTestbench.DUT.valueA[31:0]
+(17)profileTestbench.DUT.valueA[31:0]
+(18)profileTestbench.DUT.valueA[31:0]
+(19)profileTestbench.DUT.valueA[31:0]
+(20)profileTestbench.DUT.valueA[31:0]
+(21)profileTestbench.DUT.valueA[31:0]
+(22)profileTestbench.DUT.valueA[31:0]
+(23)profileTestbench.DUT.valueA[31:0]
+(24)profileTestbench.DUT.valueA[31:0]
+(25)profileTestbench.DUT.valueA[31:0]
+(26)profileTestbench.DUT.valueA[31:0]
+(27)profileTestbench.DUT.valueA[31:0]
+(28)profileTestbench.DUT.valueA[31:0]
+(29)profileTestbench.DUT.valueA[31:0]
+(30)profileTestbench.DUT.valueA[31:0]
+(31)profileTestbench.DUT.valueA[31:0]
+@1401200
+-group_end
+@c00025
+[color] 5
+profileTestbench.DUT.valueB[31:0]
+@29
+(0)profileTestbench.DUT.valueB[31:0]
+(1)profileTestbench.DUT.valueB[31:0]
+(2)profileTestbench.DUT.valueB[31:0]
+(3)profileTestbench.DUT.valueB[31:0]
+(4)profileTestbench.DUT.valueB[31:0]
+(5)profileTestbench.DUT.valueB[31:0]
+(6)profileTestbench.DUT.valueB[31:0]
+(7)profileTestbench.DUT.valueB[31:0]
+(8)profileTestbench.DUT.valueB[31:0]
+(9)profileTestbench.DUT.valueB[31:0]
+(10)profileTestbench.DUT.valueB[31:0]
+(11)profileTestbench.DUT.valueB[31:0]
+(12)profileTestbench.DUT.valueB[31:0]
+(13)profileTestbench.DUT.valueB[31:0]
+(14)profileTestbench.DUT.valueB[31:0]
+(15)profileTestbench.DUT.valueB[31:0]
+(16)profileTestbench.DUT.valueB[31:0]
+(17)profileTestbench.DUT.valueB[31:0]
+(18)profileTestbench.DUT.valueB[31:0]
+(19)profileTestbench.DUT.valueB[31:0]
+(20)profileTestbench.DUT.valueB[31:0]
+(21)profileTestbench.DUT.valueB[31:0]
+(22)profileTestbench.DUT.valueB[31:0]
+(23)profileTestbench.DUT.valueB[31:0]
+(24)profileTestbench.DUT.valueB[31:0]
+(25)profileTestbench.DUT.valueB[31:0]
+(26)profileTestbench.DUT.valueB[31:0]
+(27)profileTestbench.DUT.valueB[31:0]
+(28)profileTestbench.DUT.valueB[31:0]
+(29)profileTestbench.DUT.valueB[31:0]
+(30)profileTestbench.DUT.valueB[31:0]
+(31)profileTestbench.DUT.valueB[31:0]
+@1401201
+-group_end
+@200
+-ENABLES
+@28
+[color] 1
+profileTestbench.DUT.cycleCounterEnable
+[color] 1
+profileTestbench.DUT.stallCounterEnable
+[color] 1
+profileTestbench.DUT.busIdleCounterEnable
+[color] 1
+profileTestbench.DUT.cycleCounter2Enable
+@200
+-COUNTERS
+@24
+profileTestbench.DUT.cycleCounterValue[31:0]
+profileTestbench.DUT.stallCounterValue[31:0]
+profileTestbench.DUT.busIdleCounterValue[31:0]
+profileTestbench.DUT.cycleCounter2Value[31:0]
+@200
+-OUTPUT
+@28
+[color] 3
+profileTestbench.DUT.done
+@c00024
+[color] 3
+profileTestbench.DUT.result[31:0]
+@28
+(0)profileTestbench.DUT.result[31:0]
+(1)profileTestbench.DUT.result[31:0]
+(2)profileTestbench.DUT.result[31:0]
+(3)profileTestbench.DUT.result[31:0]
+(4)profileTestbench.DUT.result[31:0]
+(5)profileTestbench.DUT.result[31:0]
+(6)profileTestbench.DUT.result[31:0]
+(7)profileTestbench.DUT.result[31:0]
+(8)profileTestbench.DUT.result[31:0]
+(9)profileTestbench.DUT.result[31:0]
+(10)profileTestbench.DUT.result[31:0]
+(11)profileTestbench.DUT.result[31:0]
+(12)profileTestbench.DUT.result[31:0]
+(13)profileTestbench.DUT.result[31:0]
+(14)profileTestbench.DUT.result[31:0]
+(15)profileTestbench.DUT.result[31:0]
+(16)profileTestbench.DUT.result[31:0]
+(17)profileTestbench.DUT.result[31:0]
+(18)profileTestbench.DUT.result[31:0]
+(19)profileTestbench.DUT.result[31:0]
+(20)profileTestbench.DUT.result[31:0]
+(21)profileTestbench.DUT.result[31:0]
+(22)profileTestbench.DUT.result[31:0]
+(23)profileTestbench.DUT.result[31:0]
+(24)profileTestbench.DUT.result[31:0]
+(25)profileTestbench.DUT.result[31:0]
+(26)profileTestbench.DUT.result[31:0]
+(27)profileTestbench.DUT.result[31:0]
+(28)profileTestbench.DUT.result[31:0]
+(29)profileTestbench.DUT.result[31:0]
+(30)profileTestbench.DUT.result[31:0]
+(31)profileTestbench.DUT.result[31:0]
+@1401200
+-group_end
+[pattern_trace] 1
+[pattern_trace] 0
