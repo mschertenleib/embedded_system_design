@@ -1,7 +1,7 @@
 /* set the time-units for simulation */
 `timescale 1ps/1ps
 
-module fifoTestbench;
+module profileTestbench;
 
   reg reset, clock;
   initial 
@@ -13,15 +13,18 @@ module fifoTestbench;
       forever #5 clock = ~clock;    /* generate a clock with a period of 10 time-units */
     end
   
-  reg start_Sig, stall_Sig, busIdle_Sig, cpu_Cin_sig, done_out;
-  reg [31:0] valueA_sig, valueB_Sig, result_out; 
+  reg start_Sig, stall_Sig, busIdle_Sig;
+  reg [7:0] cpu_Cin_sig;
+  reg [31:0] valueA_sig, valueB_Sig;
+  wire done_out;
+  wire [31:0] result_out; 
 
   profileCi #(.customId(8'h00)) DUT
         (.start(start_Sig),
          .clock(clock),
          .reset(reset),
          .stall(stall_Sig),
-         .busIdle(busIdle_Sig)
+         .busIdle(busIdle_Sig),
          .valueA(valueA_sig),
          .valueB(valueB_Sig),
          .ciN(cpu_Cin_sig),
@@ -30,12 +33,15 @@ module fifoTestbench;
   
   initial
     begin
-      $dumpfile("fifoSignals.vcd"); /* define the name of the .vcd file that can be viewed by GTKWAVE */
+      $dumpfile("Profile_Signals.vcd"); /* define the name of the .vcd file that can be viewed by GTKWAVE */
       $dumpvars(1,DUT);             /* dump all signals inside the DUT-component in the .vcd file */
     end
 
   initial
     begin
+      valueA_sig = 32'd0;
+      valueB_Sig = 32'd0;
+      cpu_Cin_sig = 8'd0;
       start_Sig = 1'b1;
       cpu_Cin_sig = 1'b1;
       stall_Sig = 1'b0;
@@ -43,19 +49,19 @@ module fifoTestbench;
       @(negedge reset);            /* wait for the reset period to end */
       repeat(2) @(negedge clock);  /* wait for 2 clock cycles */
       valueA_sig[1:0] = 2'd0;      // look at counter0Value
-      valueB_Sig[3:0] = 4'b0111 // enables
-      valueB_Sig[7:4] = 4'b0000 // disables
-      valueB_Sig[11:0]= 4'b0000 // resets
+      valueB_Sig[3:0] = 4'b0111; // enables
+      valueB_Sig[7:4] = 4'b0000; // disables
+      valueB_Sig[11:0]= 4'b0000; // resets
       repeat(32) @(negedge clock); /* wait for 32 clock cycles */
       valueA_sig[1:0] = 2'd3;      // look at counter3Value
-      valueB_Sig[3:0] = 4'b1110 // enables
+      valueB_Sig[3:0] = 4'b1110; // enables
       repeat(32) @(negedge clock); /* wait for 32 clock cycles */
-      valueB_Sig[11:0]= 4'b1111 // resets
+      valueB_Sig[11:0]= 4'b1111; // resets
       repeat(4) @(negedge clock); /* wait for 4 clock cycles */
       valueA_sig[1:0] = 2'd0;      // look at counter0Value
-      valueB_Sig[3:0] = 4'b1111 // enables
-      valueB_Sig[7:4] = 4'b0000 // disables
-      valueB_Sig[11:0]= 4'b0000 // resets
+      valueB_Sig[3:0] = 4'b1111; // enables
+      valueB_Sig[7:4] = 4'b0000; // disables
+      valueB_Sig[11:0]= 4'b0000; // resets
       stall_Sig = 1'b1;
       busIdle_Sig = 1'b0;
       repeat(16) @(negedge clock); /* wait for 16 clock cycles */

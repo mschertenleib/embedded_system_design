@@ -3,4 +3,6 @@ compile_commands.json
 build-debug/
 build-release/
 sandbox/
+*.vcd
+
 
