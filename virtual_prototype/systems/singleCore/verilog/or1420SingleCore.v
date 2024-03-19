@@ -55,7 +55,7 @@ module or1420SingleCore ( input wire         clock12MHz,
   wire [3:0]  s_byteEnables;
   wire        s_readNotWrite, s_dataValid, s_busy;
   wire [7:0]  s_burstSize;
-
+  
   /*
    *
    * We use a PLL to generate the required clocks for the HDMI part
@@ -66,13 +66,13 @@ module or1420SingleCore ( input wire         clock12MHz,
   wire     s_pixelClkX2;
   wire     s_pllLocked;
   wire     s_reset = ~s_resetCountReg[4];
-
+  
   assign camnReset = s_resetCountReg[4];
 
   always @(posedge s_systemClock or negedge s_pllLocked)
     if (s_pllLocked == 1'b0) s_resetCountReg <= 5'd0;
     else s_resetCountReg <= (s_resetCountReg[4] == 1'b0) ? s_resetCountReg + 5'd1 : s_resetCountReg;
-
+  
 `ifdef GECKO5Education
   wire s_resetPll = ~nReset;
   wire s_feedbackClock;
@@ -123,7 +123,7 @@ module or1420SingleCore ( input wire         clock12MHz,
         .PLLWAKESYNC(1'b0),
         .ENCLKOP(1'b0),
         .LOCK(s_pllLocked)
-    );
+	);
 `else
   wire[4:0] s_pllClocks;
   // CPU @ 74.25MHz
@@ -132,7 +132,7 @@ module or1420SingleCore ( input wire         clock12MHz,
   assign s_systemClock = s_pllClocks[2];
   assign s_systemClockX2 = s_pllClocks[3];
 
-
+  
 	altpll	altpll_component (
 				.areset (~nReset),
 				.inclk ({1'b0,clock12MHz}),
@@ -275,7 +275,7 @@ module or1420SingleCore ( input wire         clock12MHz,
   wire        s_sdramBusy, s_sdramBusError;
   wire [31:0] s_sdramAddressData;
   wire        s_cpuReset = s_reset | s_sdramInitBusy;
-
+  
   sdramController #( .baseAddress(32'h00000000),
                      .systemClockInHz(`ifdef GECKO5Education 42857143 `else 42428571 `endif)) sdram
                    ( .clock(s_systemClock),
@@ -312,10 +312,10 @@ module or1420SingleCore ( input wire         clock12MHz,
    * Here we instantiate the CPU
    *
    */
-  wire [31:0] s_cpu1CiResult;
-  wire [31:0] s_cpu1CiDataA, s_cpu1CiDataB, s_camCiResult, s_delayResult, s_profileCiResult;
+  wire [31:0] s_cpu1CiResult, s_profileResult;
+  wire [31:0] s_cpu1CiDataA, s_cpu1CiDataB, s_camCiResult, s_delayResult;
   wire [7:0]  s_cpu1CiN;
-  wire        s_cpu1CiRa, s_cpu1CiRb, s_cpu1CiRc, s_cpu1CiStart, s_cpu1CiCke, s_cpu1CiDone, s_i2cCiDone, s_delayCiDone, s_profileciDone;
+  wire        s_cpu1CiRa, s_cpu1CiRb, s_cpu1CiRc, s_cpu1CiStart, s_cpu1CiCke, s_cpu1CiDone, s_i2cCiDone, s_delayCiDone;
   wire [4:0]  s_cpu1CiA, s_cpu1CiB, s_cpu1CiC;
   wire        s_cpu1IcacheRequestBus, s_cpu1DcacheRequestBus, s_camCiDone;
   wire        s_cpu1IcacheBusAccessGranted, s_cpu1DcacheBusAccessGranted;
@@ -324,17 +324,16 @@ module or1420SingleCore ( input wire         clock12MHz,
   wire [3:0]  s_cpu1byteEnables;
   wire        s_cpu1DataValid;
   wire [7:0]  s_cpu1BurstSize;
-  wire        s_spm1Irq;
-  wire        s_cpu1IsStalled;
-
-  assign s_cpu1CiDone = s_hdmiDone | s_swapByteDone | s_flashDone | s_cpuFreqDone | s_i2cCiDone | s_delayCiDone | s_camCiDone | s_profileCiDone;
-  assign s_cpu1CiResult = s_hdmiResult | s_swapByteResult | s_flashResult | s_cpuFreqResult | s_i2cCiResult | s_camCiResult | s_delayResult | s_profileCiResult;
+  wire        s_spm1Irq, s_profileDone, s_stall;
+  
+  assign s_cpu1CiDone = s_hdmiDone | s_swapByteDone | s_flashDone | s_cpuFreqDone | s_i2cCiDone | s_delayCiDone | s_camCiDone | s_profileDone;
+  assign s_cpu1CiResult = s_hdmiResult | s_swapByteResult | s_flashResult | s_cpuFreqResult | s_i2cCiResult | s_camCiResult | s_delayResult | s_profileResult; 
 
   or1420Top #( .NOP_INSTRUCTION(32'h1500FFFF)) cpu1
              (.cpuClock(s_systemClock),
               .cpuReset(s_cpuReset),
               .irq(1'b0),
-              .cpuIsStalled(s_cpu1IsStalled),
+              .cpuIsStalled(s_stall),
               .iCacheReqBus(s_cpu1IcacheRequestBus),
               .dCacheReqBus(s_cpu1DcacheRequestBus),
               .iCacheBusGrant(s_cpu1IcacheBusAccessGranted),
@@ -363,7 +362,7 @@ module or1420SingleCore ( input wire         clock12MHz,
               .ciDataB(s_cpu1CiDataB),
               .ciResult(s_cpu1CiResult),
               .ciDone(s_cpu1CiDone));
-
+              
               assign s_cpu1CiCke = 1'b1;
 
   /*
@@ -434,6 +433,24 @@ module or1420SingleCore ( input wire         clock12MHz,
              .ciValueB(s_cpu1CiDataB),
              .ciDone(s_delayCiDone),
              .ciResult(s_delayResult));
+
+  /*
+   *
+   * A profile ISE
+   *
+   */
+  profileCi #(.customId(8'd12)) profiler
+             (.start(s_cpu1CiStart),
+              .clock(s_systemClock),
+              .reset(s_cpuReset),
+              .stall(s_stall),
+              .busIdle(s_busIdle),
+              .valueA(s_cpu1CiDataA),
+              .valueB(s_cpu1CiDataB),
+              .ciN(s_cpu1CiN),
+              .done(s_profileDone),
+              .result(s_profileResult) );
+  
   /*
    *
    * Here we define the camera interface
@@ -444,7 +461,7 @@ module or1420SingleCore ( input wire         clock12MHz,
   wire [31:0] s_camAddressData;
   wire [3:0] s_camByteEnables;
   wire [7:0] s_camBurstSize;
-
+  
   camera #(.customInstructionId(8'd7),
            .clockFrequencyInHz(74250000)) camIf
           (.clock(s_systemClock),
@@ -485,7 +502,7 @@ module or1420SingleCore ( input wire         clock12MHz,
 
   screens #(.baseAddress(32'h50000020),
             .pixelClockFrequency(27'd74250000),
-            .cursorBlinkFrequency(27'd1)) hdmi
+            .cursorBlinkFrequency(27'd1)) hdmi 
            (.pixelClockIn(s_pixelClock),
             .clock(s_systemClock),
             .reset(s_reset),
@@ -604,13 +621,13 @@ module or1420SingleCore ( input wire         clock12MHz,
    */
  wire [31:0] s_busRequests, s_busGrants;
  wire        s_arbBusError, s_arbEndTransaction;
-
+ 
  assign s_busRequests[31] = s_cpu1DcacheRequestBus;
  assign s_busRequests[30] = s_cpu1IcacheRequestBus;
  assign s_busRequests[29] = s_hdmiRequestBus;
  assign s_busRequests[28] =  s_camReqBus;
  assign s_busRequests[27:0] = 29'd0;
-
+ 
  assign s_cpu1DcacheBusAccessGranted = s_busGrants[31];
  assign s_cpu1IcacheBusAccessGranted = s_busGrants[30];
  assign s_hdmiBusgranted             = s_busGrants[29];
@@ -629,7 +646,7 @@ module or1420SingleCore ( input wire         clock12MHz,
                       .dataValidIn(s_dataValid),
                       .addressDataIn(s_addressData[31:30]),
                       .burstSizeIn(s_burstSize));
-
+ 
   /*
    *
    * Here we define the bus architecture
@@ -647,24 +664,5 @@ module or1420SingleCore ( input wire         clock12MHz,
                              s_flashDataValid | s_camDataValid;
  assign s_busy             = s_sdramBusy;
  assign s_burstSize        = s_cpu1BurstSize | s_hdmiBurstSize | s_camBurstSize;
-
-
-  /*
-   *
-   * Here we define the profiling custom instruction
-   *
-   */
- profileCi #(.customId(8'h08)) profile (
-    .start(s_cpu1CiStart),
-    .clock(s_systemClock),
-    .reset(s_cpuReset),
-    .stall(s_cpuIsStalled),
-    .busIdle(s_busIdle),
-    .valueA(s_cpu1CiDataA),
-    .valueB(s_cpu1CiDataB),
-    .ciN(s_cpu1CiN),
-    .done(s_profileCiDone),
-    .result(s_profileCiResult));
-
+ 
 endmodule
-
