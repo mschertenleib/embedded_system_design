@@ -450,7 +450,20 @@ module or1420SingleCore ( input wire         clock12MHz,
               .ciN(s_cpu1CiN),
               .done(s_profileDone),
               .result(s_profileResult) );
-  
+
+    /*
+   *
+   * rgb565 to grayscale conversion ISE
+   *
+   */
+  rgb565GrayscaleIse #(.customInstructionId(8'd13)) rgb2gray
+                      (.start(start_Sig),
+                      .valueA(valueA_sig),
+                      .valueB(valueB_Sig),
+                      .iseId(cpu_Cin_sig),
+                      .done(done_out),
+                      .result(result_out));
+            
   /*
    *
    * Here we define the camera interface

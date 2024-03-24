@@ -34,6 +34,14 @@ static uint32_t read_counter(CounterType counterId) {
   return result;
 }
 
+static uint32_t rgb2gray(uint32_t pixelrgb) {
+  uint32_t result;
+  asm volatile("l.nios_rrr %[out1],%[in1],r0,0xD"
+               : [out1] "=r"(result)
+               : [in1] "r"(pixelrgb));
+  return result;
+}
+
 static void control_counters(uint32_t control) {
   asm volatile("l.nios_rrr r0,r0,%[in2],0x0C" ::[in2] "r"(control));
 }
@@ -74,13 +82,16 @@ int main() {
     //start of conversion
     for (int line = 0; line < camParams.nrOfLinesPerImage; line++) {
       for (int pixel = 0; pixel < camParams.nrOfPixelsPerLine; pixel++) {
-        uint16_t rgb =
-            swap_u16(rgb565[line * camParams.nrOfPixelsPerLine + pixel]);
+        /*
+        uint16_t rgb = swap_u16(rgb565[line * camParams.nrOfPixelsPerLine + pixel]);
         uint32_t red1 = ((rgb >> 11) & 0x1F) << 3;
         uint32_t green1 = ((rgb >> 5) & 0x3F) << 2;
         uint32_t blue1 = (rgb & 0x1F) << 3;
         uint32_t gray = ((red1 * 54 + green1 * 183 + blue1 * 19) >> 8) & 0xFF;
         grayscale[line * camParams.nrOfPixelsPerLine + pixel] = gray;
+        */
+        uint16_t rgb = swap_u16(rgb565[line * camParams.nrOfPixelsPerLine + pixel]);
+        grayscale[line * camParams.nrOfPixelsPerLine + pixel] = rgb2gray((uint32_t)rgb);
       }
     }
     control_counters(DISABLE_CYCLES | DISABLE_BUS_IDLE | DISABLE_STALL | DISABLE_CYCLES_2);

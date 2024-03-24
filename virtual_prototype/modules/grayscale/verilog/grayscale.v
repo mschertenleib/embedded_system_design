@@ -1,27 +1,7 @@
-module bitadder (
-    input wire A,B,Cin,
-    output wire S,Cout);
-
-    assign S = (A^B)^Cin;
-    assign Cout = (A*B)+(Cin*(A^B));
-endmodule
-
-module nbitadder #(parameter n = 4'd8)
-    (input wire[n-1:0] A,B,
-     input wire Cin,
-     output wire[n-1:0] S,
-     output wire Cout);
-
-    wire[n-1:0] carry;
-
-    for(int i = 0; i < n ; i = i+1)begin
-        if(i=0) bitadder(A[i],B[i],Cin,S[i],carry[i]);
-    end
-endmodule
 
 module rgb565GrayscaleIse #(parameter [7:0] customInstructionId = 8'd0)
-    (input wire         start,
-    input wire[31:0]   valueA, //rgb565value (lower 16bits)
+    (input wire        start,
+    input wire[31:0]   valueB,valueA, //rgb565value (lower 16bits)
     input wire[7:0]    iseId,
     output wire        done,
     output wire[31:0]  result);
