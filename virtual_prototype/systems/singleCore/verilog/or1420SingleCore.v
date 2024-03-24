@@ -325,9 +325,12 @@ module or1420SingleCore ( input wire         clock12MHz,
   wire        s_cpu1DataValid;
   wire [7:0]  s_cpu1BurstSize;
   wire        s_spm1Irq, s_profileDone, s_stall;
+
+  wire[31:0]  s_rgb2grayResult;
+  wire        s_rgb2grayDone;
   
-  assign s_cpu1CiDone = s_hdmiDone | s_swapByteDone | s_flashDone | s_cpuFreqDone | s_i2cCiDone | s_delayCiDone | s_camCiDone | s_profileDone;
-  assign s_cpu1CiResult = s_hdmiResult | s_swapByteResult | s_flashResult | s_cpuFreqResult | s_i2cCiResult | s_camCiResult | s_delayResult | s_profileResult; 
+  assign s_cpu1CiDone = s_hdmiDone | s_swapByteDone | s_flashDone | s_cpuFreqDone | s_i2cCiDone | s_delayCiDone | s_camCiDone | s_profileDone | s_rgb2grayDone;
+  assign s_cpu1CiResult = s_hdmiResult | s_swapByteResult | s_flashResult | s_cpuFreqResult | s_i2cCiResult | s_camCiResult | s_delayResult | s_profileResult | s_rgb2grayResult; 
 
   or1420Top #( .NOP_INSTRUCTION(32'h1500FFFF)) cpu1
              (.cpuClock(s_systemClock),
@@ -456,13 +459,13 @@ module or1420SingleCore ( input wire         clock12MHz,
    * rgb565 to grayscale conversion ISE
    *
    */
-  rgb565GrayscaleIse #(.customInstructionId(8'd13)) rgb2gray
-                      (.start(start_Sig),
-                      .valueA(valueA_sig),
-                      .valueB(valueB_Sig),
-                      .iseId(cpu_Cin_sig),
-                      .done(done_out),
-                      .result(result_out));
+  rgb565GrayscaleIse #(.customInstructionId(8'hD)) rgb2gray
+                      (.start(s_cpu1CiStart),
+                      .valueA(s_cpu1CiDataA),
+                      .valueB(s_cpu1CiDataB),
+                      .iseId(s_cpu1CiN),
+                      .done(s_rgb2grayDone),
+                      .result(s_rgb2grayResult));
             
   /*
    *

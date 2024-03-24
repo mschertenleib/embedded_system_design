@@ -90,7 +90,8 @@ int main() {
         uint32_t gray = ((red1 * 54 + green1 * 183 + blue1 * 19) >> 8) & 0xFF;
         grayscale[line * camParams.nrOfPixelsPerLine + pixel] = gray;
         */
-        uint16_t rgb = swap_u16(rgb565[line * camParams.nrOfPixelsPerLine + pixel]);
+        uint16_t rgb = rgb565[line * camParams.nrOfPixelsPerLine + pixel];
+        if(line == 0) printf("px: %d rgb: %#X",pixel,rgb);
         grayscale[line * camParams.nrOfPixelsPerLine + pixel] = rgb2gray((uint32_t)rgb);
       }
     }
