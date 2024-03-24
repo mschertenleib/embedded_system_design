@@ -90,9 +90,8 @@ int main() {
         uint32_t gray = ((red1 * 54 + green1 * 183 + blue1 * 19) >> 8) & 0xFF;
         grayscale[line * camParams.nrOfPixelsPerLine + pixel] = gray;
         */
-        uint16_t rgb = rgb565[line * camParams.nrOfPixelsPerLine + pixel];
-        if(line == 0) printf("px: %d rgb: %#X",pixel,rgb);
-        grayscale[line * camParams.nrOfPixelsPerLine + pixel] = rgb2gray((uint32_t)rgb);
+        uint32_t rgb = rgb565[line * camParams.nrOfPixelsPerLine + pixel];
+        grayscale[line * camParams.nrOfPixelsPerLine + pixel] = 2*rgb2gray((uint32_t)rgb);
       }
     }
     control_counters(DISABLE_CYCLES | DISABLE_BUS_IDLE | DISABLE_STALL | DISABLE_CYCLES_2);

@@ -50,6 +50,7 @@ module rgb2gray_tb;
         repeat(1) @(negedge clock);
       end
       valueA_sig[15:11] = 0;
+      start_Sig = 1'b0;
       for(i = 0; i < 2**6; i = i + 1)begin
         valueA_sig[10:5] = i;
         repeat(1) @(negedge clock);
