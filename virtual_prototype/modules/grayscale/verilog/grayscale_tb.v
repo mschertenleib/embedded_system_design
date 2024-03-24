@@ -20,14 +20,14 @@ module rgb2gray_tb;
   integer i;
   integer seed = 1;
 
-  rgbToGrayscaleCi #(
+  rgb565GrayscaleIse #(
       .customInstructionId(8'h00)
   ) DUT (
-      .start(start_Sig),
+      .start (start_Sig),
       .valueA(valueA_sig),
       .valueB(valueB_Sig),
-      .ciN(cpu_Cin_sig),
-      .done(done_out),
+      .iseId (cpu_Cin_sig),
+      .done  (done_out),
       .result(result_out)
   );
 

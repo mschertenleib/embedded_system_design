@@ -1,10 +1,10 @@
-module rgbToGrayscaleCi #(
+module rgb565GrayscaleIse #(
     parameter [7:0] customInstructionId = 8'd0
 ) (
     input  wire        start,
     input  wire [31:0] valueA,
     valueB,
-    input  wire [ 7:0] ciN,
+    input  wire [ 7:0] iseId,
     output wire        done,
     output wire [31:0] result
 );
@@ -15,7 +15,7 @@ module rgbToGrayscaleCi #(
   assign four_pixels_rgb565[63:48] = valueB[31:16];
   wire [31:0] four_pixels_grayscale;
 
-  rgbToGrayscale converters[0:3] (
+  rgb565Grayscale converters[0:3] (
       .rgb565(four_pixels_rgb565),
       .grayscale(four_pixels_grayscale)
   );
