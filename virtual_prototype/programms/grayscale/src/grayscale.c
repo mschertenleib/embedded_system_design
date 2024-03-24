@@ -28,14 +28,14 @@ typedef enum {
 
 static uint32_t read_counter(CounterType counterId) {
   uint32_t result;
-  asm volatile("l.nios_rrr %[out1],%[in1],r0,0x08"
+  asm volatile("l.nios_rrr %[out1],%[in1],r0,0xC"
                : [out1] "=r"(result)
                : [in1] "r"(counterId));
   return result;
 }
 
 static void control_counters(uint32_t control) {
-  asm volatile("l.nios_rrr r0,r0,%[in2],0x08" ::[in2] "r"(control));
+  asm volatile("l.nios_rrr r0,r0,%[in2],0x0C" ::[in2] "r"(control));
 }
 
 int main() {
