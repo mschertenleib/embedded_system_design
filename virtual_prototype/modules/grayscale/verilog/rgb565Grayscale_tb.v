@@ -21,8 +21,7 @@ module rgb565Grayscale_tb;
       rgb565[4:0]   = blue;
       #1
       $display(
-          "%s: rgb565={%0d,%0d,%0d} => grayscale=%0d (expected %0d)",
-          (grayscale == expected_grayscale) ? "Passed" : "Failed",
+          "rgb565={%2d,%2d,%2d} => grayscale=%3d (expected %3d)",
           red,
           green,
           blue,
@@ -35,6 +34,12 @@ module rgb565Grayscale_tb;
   initial begin
     test(.red(0), .green(0), .blue(0), .expected_grayscale(0));
     test(.red(31), .green(63), .blue(31), .expected_grayscale(255));
+    test(.red(31), .green(0), .blue(0), .expected_grayscale(54));
+    test(.red(0), .green(63), .blue(0), .expected_grayscale(183));
+    test(.red(0), .green(0), .blue(31), .expected_grayscale(19));
+    test(.red(8), .green(16), .blue(8), .expected_grayscale(65));
+    test(.red(16), .green(32), .blue(16), .expected_grayscale(130));
+    test(.red(24), .green(48), .blue(24), .expected_grayscale(195));
 
     $finish;
   end
