@@ -4,7 +4,7 @@
 
 #include <stdio.h>
 
-#define PARALLEL // UNOPT,SINGLEPX,PARALLEL
+#define UNOPT // UNOPT,SINGLEPX,PARALLEL
 
 typedef enum {
   COUNTER_CYCLES = 0,
@@ -50,9 +50,11 @@ static uint32_t rgb2gray(uint32_t px10, uint32_t px32) {
 
 void rgb2gray_parallel(volatile uint8_t *result, const volatile uint16_t *px) {
   uint32_t temp;
-  uint32_t px10 = ((uint32_t)px[1] << 16) | (uint32_t)px[0];
-  uint32_t px32 = ((uint32_t)px[3] << 16) | (uint32_t)px[2];
-  asm volatile("l.nios_rrr %[out1],%[in1],%[in2],0xE"
+  uint32_t px10 = swap_u32(((uint32_t)px[1] << 16) | (uint32_t)px[0]);
+  uint32_t px32 = swap_u32(((uint32_t)px[3] << 16) | (uint32_t)px[2]);
+  //uint32_t px10 = (uint32_t)(swap_u16(px[1]) << 16) | (uint32_t)swap_u16(px[0]);
+  //uint32_t px32 = (uint32_t)(swap_u16(px[3]) << 16) | (uint32_t)swap_u16(px[2]);
+  asm volatile("l.nios_rrr %[out1],%[in1],%[in2],0xD"
                : [out1] "=r"(temp)
                : [in1] "r"(px10), [in2] "r"(px32));
   result[0] = (uint8_t)((temp & 0xFF000000) >> 24);
@@ -114,13 +116,10 @@ int main() {
     }
   #endif
   #ifdef SINGLEPX
-      for (int line = 0; line < camParams.nrOfLinesPerImage; line++) {
-        for (int pixel = 0; pixel < camParams.nrOfPixelsPerLine; pixel++) {
-          uint32_t rgbpx = rgb565[line * camParams.nrOfPixelsPerLine + pixel];
-          grayscale[line * camParams.nrOfPixelsPerLine + pixel] =
-              rgb2gray(rgbpx, 0);
+      for (int px = 0; px < camParams.nrOfLinesPerImage * camParams.nrOfPixelsPerLine; px++) {
+          uint32_t rgbpx = swap_u16(rgb565[px]);
+          grayscale[px] = rgb2gray(rgbpx, 0);
         }
-      }
   #endif
   #ifdef PARALLEL
       for (int px = 0;
