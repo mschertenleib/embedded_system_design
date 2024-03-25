@@ -36,7 +36,7 @@ static uint32_t read_counter(CounterType counterId) {
   return result;
 }
 
-static uint32_t rgb565Grayscale(uint32_t pixels_1_0, uint32_t pixels_3_2) {
+inline static uint32_t rgb565Grayscale(uint32_t pixels_1_0, uint32_t pixels_3_2) {
   uint32_t result;
   asm volatile("l.nios_rrr %[out1],%[in1],%[in2],0xD"
                : [out1] "=r"(result)
@@ -44,12 +44,12 @@ static uint32_t rgb565Grayscale(uint32_t pixels_1_0, uint32_t pixels_3_2) {
   return result;
 }
 
-static uint8_t rgb2gray(uint16_t rgb565) {
+inline static uint8_t rgb2gray(uint16_t rgb565) {
   uint32_t px = (uint32_t)rgb565;
   return (uint8_t)rgb565Grayscale(px, 0);
 }
 
-static void rgb2gray_parallel(volatile uint8_t *result, const volatile uint16_t *px) {
+inline static void rgb2gray_parallel(volatile uint8_t *result, const volatile uint16_t *px) {
   uint32_t* imgptr = (uint32_t*) px;
   uint32_t gray = rgb565Grayscale(imgptr[1], imgptr[0]);
   uint32_t* ptrres = (uint32_t*)result;
