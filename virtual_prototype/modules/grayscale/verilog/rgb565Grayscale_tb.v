@@ -16,12 +16,14 @@ module rgb565Grayscale_tb;
     input [4:0] blue;
     input [7:0] expected_grayscale;
     begin
-      rgb565[15:11] = red;
-      rgb565[10:5]  = green;
-      rgb565[4:0]   = blue;
+      rgb565[15:13] = green[2:0];
+      rgb565[12:8]  = blue;
+      rgb565[7:3]   = red;
+      rgb565[2:0]   = green[5:3];
       #1
       $display(
-          "rgb565={%2d,%2d,%2d} => grayscale=%3d (expected %3d)",
+          "rgb565=%4h={%2d,%2d,%2d} => grayscale=%3d (expected %3d)",
+          rgb565,
           red,
           green,
           blue,

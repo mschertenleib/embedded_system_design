@@ -2,9 +2,9 @@ module rgb565Grayscale (
     input  wire [15:0] rgb565,
     output wire [ 7:0] grayscale
 );
-  wire[15:0] swaprgb ;
+  wire [15:0] swaprgb;
   assign swaprgb[15:8] = rgb565[7:0];
-  assign swaprgb[7:0] = rgb565[15:8]; 
+  assign swaprgb[7:0]  = rgb565[15:8];
 
   wire [4:0] red = swaprgb[15:11];
   wire [5:0] green = swaprgb[10:5];

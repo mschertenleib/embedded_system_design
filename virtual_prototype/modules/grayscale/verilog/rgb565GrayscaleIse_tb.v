@@ -51,9 +51,10 @@ module rgb565GrayscaleIse_tb;
     input [5:0] g;
     input [4:0] b;
     begin
-      rgb[15:11] = r;
-      rgb[10:5]  = g;
-      rgb[4:0]   = b;
+      rgb[15:13] = g[2:0];
+      rgb[12:8]  = b;
+      rgb[7:3]   = r;
+      rgb[2:0]   = g[5:3];
     end
   endfunction
 
@@ -95,10 +96,12 @@ module rgb565GrayscaleIse_tb;
     test_4way(16'hffff, 16'hffff, 16'hffff, 16'hffff);
     test_4way(rgb(8, 16, 8), rgb(16, 32, 16), rgb(24, 48, 24), rgb(31, 63, 31));
 
-    test_ci(.test_start(1'b1), .test_ciN(8'd13), .test_valueA(32'h84104208),
-            .test_valueB(32'hffffc618), .expected_done(1'b1), .expected_result(32'hfabf7f3e));
-    test_ci(.test_start(1'b1), .test_ciN(8'd47), .test_valueA(32'h84104208),
-            .test_valueB(32'hffffc618), .expected_done(1'b0), .expected_result(32'h0));
+    test_ci(.test_start(1'b1), .test_ciN(8'd13), .test_valueA(32'h08421084),
+            .test_valueB(32'h18c6ffff), .expected_done(1'b1), .expected_result(32'hbffa3e7f));
+    test_ci(.test_start(1'b1), .test_ciN(8'd47), .test_valueA(32'h851e4208),
+            .test_valueB(32'h6320c618), .expected_done(1'b0), .expected_result(32'h0));
+    test_ci(.test_start(1'b1), .test_ciN(8'd13), .test_valueA(32'h0000ffff), .test_valueB(32'h0),
+            .expected_done(1'b1), .expected_result(32'h000000fa));
 
     $finish;
   end
