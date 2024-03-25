@@ -1,10 +1,10 @@
 #include <ov7670.h>
 #include <swap.h>
 #include <vga.h>
-
+#include <stdalign.h>
 #include <stdio.h>
 
-#define SINGLEPX // UNOPT,SINGLEPX,PARALLEL
+#define PARALLEL// UNOPT,SINGLEPX,PARALLEL
 
 typedef enum {
   COUNTER_CYCLES = 0,
@@ -45,23 +45,15 @@ static uint32_t rgb565Grayscale(uint32_t pixels_1_0, uint32_t pixels_3_2) {
 }
 
 static uint8_t rgb2gray(uint16_t rgb565) {
-  uint32_t px = (uint32_t)swap_u16(rgb565);
-  return (uint8_t)(rgb565Grayscale(px, 0) & 0xFF);
+  uint32_t px = (uint32_t)rgb565;
+  return (uint8_t)rgb565Grayscale(px, 0);
 }
 
-static void rgb2gray_parallel(volatile uint8_t *result,
-                              const volatile uint16_t *px) {
-  uint16_t px0 = swap_u16(px[0]);
-  uint16_t px1 = swap_u16(px[1]);
-  uint16_t px2 = swap_u16(px[2]);
-  uint16_t px3 = swap_u16(px[3]);
-  uint32_t px10 = ((uint32_t)px1 << 16) | (uint32_t)px0;
-  uint32_t px32 = ((uint32_t)px3 << 16) | (uint32_t)px2;
-  uint32_t gray = rgb565Grayscale(px10, px32);
-  result[0] = (uint8_t)((gray & 0xFF000000) >> 24);
-  result[1] = (uint8_t)((gray & 0x00FF0000) >> 16);
-  result[2] = (uint8_t)((gray & 0x0000FF00) >> 8);
-  result[3] = (uint8_t)(gray & 0x000000FF);
+static void rgb2gray_parallel(volatile uint8_t *result, const volatile uint16_t *px) {
+  uint32_t* imgptr = (uint32_t*) px;
+  uint32_t gray = rgb565Grayscale(imgptr[1], imgptr[0]);
+  uint32_t* ptrres = (uint32_t*)result;
+  *ptrres = gray;
 }
 
 static void control_counters(uint32_t control) {
@@ -69,8 +61,8 @@ static void control_counters(uint32_t control) {
 }
 
 int main() {
-  volatile uint16_t rgb565[640 * 480];
-  volatile uint8_t grayscale[640 * 480];
+  alignas(uint32_t) volatile uint16_t rgb565[640 * 480];
+  alignas(uint32_t) volatile uint8_t grayscale[640 * 480];
   volatile uint32_t result, cycles, stall, idle;
   volatile unsigned int *vga = (unsigned int *)0X50000020;
   camParameters camParams;
@@ -114,8 +106,7 @@ int main() {
       }
     }
     #elif defined(SINGLEPX)
-        for (int px = 0;
-            px < camParams.nrOfLinesPerImage * camParams.nrOfPixelsPerLine; ++px) {
+        for (int px = 0; px < camParams.nrOfLinesPerImage * camParams.nrOfPixelsPerLine; ++px) {
           grayscale[px] = rgb2gray(rgb565[px]);
         }
     #elif defined(PARALLEL)
