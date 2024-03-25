@@ -11,16 +11,21 @@ module rgb565Grayscale_tb;
   );
 
   task automatic test;
-    input [15:0] test_rgb565;
+    input [4:0] red;
+    input [5:0] green;
+    input [4:0] blue;
     input [7:0] expected_grayscale;
-
     begin
-      rgb565 = test_rgb565;
+      rgb565[15:11] = red;
+      rgb565[10:5]  = green;
+      rgb565[4:0]   = blue;
       #1
       $display(
-          "%s: rgb565=%0d => grayscale=%0d (expected %0d)",
+          "%s: rgb565={%0d,%0d,%0d} => grayscale=%0d (expected %0d)",
           (grayscale == expected_grayscale) ? "Passed" : "Failed",
-          rgb565,
+          red,
+          green,
+          blue,
           grayscale,
           expected_grayscale
       );
@@ -28,8 +33,8 @@ module rgb565Grayscale_tb;
   endtask
 
   initial begin
-    test(.test_rgb565(16'h0), .expected_grayscale(8'h0));
-    test(.test_rgb565(16'hffff), .expected_grayscale(8'hff));
+    test(.red(0), .green(0), .blue(0), .expected_grayscale(0));
+    test(.red(31), .green(63), .blue(31), .expected_grayscale(255));
 
     $finish;
   end
