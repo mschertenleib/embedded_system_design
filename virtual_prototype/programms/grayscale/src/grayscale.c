@@ -37,11 +37,11 @@ static uint32_t read_counter(CounterType counterId) {
 }
 
 #ifdef SINGLEPX
-static uint32_t rgb2gray(uint32_t pixelrgb) {
+static uint32_t rgb2gray(uint32_t px10, uint32_t px32) {
   uint32_t result;
-  asm volatile("l.nios_rrr %[out1],%[in1],r0,0xD"
+  asm volatile("l.nios_rrr %[out1],%[in1],%[in2],0xD"
                : [out1] "=r"(result)
-               : [in1] "r"(pixelrgb));
+               : [in1] "r"(px10),[in2] "r"(px32));
   return result;
 }
 #endif
@@ -49,11 +49,11 @@ static uint32_t rgb2gray(uint32_t pixelrgb) {
 #ifdef PARALLEL
 void rgb2gray_parallel( uint8_t** result,uint16_t** px) {
   uint32_t temp;
-  uint32_t** px01 = (uint32_t**) px;
-  uint32_t** px23 = (uint32_t**) (px+2); 
+  uint32_t px10 = (uint32_t)(px[0] + px[1]<<16);
+  uint32_t px32 = (uint32_t)(px[2] + px[3]<<16); 
   asm volatile("l.nios_rrr %[out1],%[in1],%[in2],0xE"
                : [out1] "=r"(temp)
-               : [in1] "r"(**px01) [in2] "r"(**px23));
+               : [in1] "r"(px10) [in2] "r"(**px32));
   result[0] = (uint8_t)(temp >>(3*8));
   result[1] = (uint8_t)((temp >>(2*8)) & 0x000F);
   result[2] = (uint8_t)((temp >>(1*8)) & 0x000F);
@@ -114,8 +114,8 @@ int main() {
     #ifdef SINGLEPX
     for (int line = 0; line < camParams.nrOfLinesPerImage; line++) {
       for (int pixel = 0; pixel < camParams.nrOfPixelsPerLine; pixel++) {
-        uint32_t rgb = rgb565[line * camParams.nrOfPixelsPerLine + pixel];
-        grayscale[line * camParams.nrOfPixelsPerLine + pixel] = 2*rgb2gray((uint32_t)rgb);
+        uint32_t rgbpx = rgb565[line * camParams.nrOfPixelsPerLine + pixel];
+        grayscale[line * camParams.nrOfPixelsPerLine + pixel] = rgb2gray(rgbpx,0);
       }
     }
     #endif
@@ -128,6 +128,6 @@ int main() {
     stall = read_counter(COUNTER_STALL);
     idle = read_counter(COUNTER_BUS_IDLE);
     cycles = read_counter(COUNTER_CYCLES);
-    printf("Cycles: %lu Stall: %lu Bus Idle: %lu\n", cycles,stall,idle);
+    printf("C: %lu S: %lu BI: %lu Efficiency: %lu\n", cycles,stall,idle,cycles-stall);
   }
 }

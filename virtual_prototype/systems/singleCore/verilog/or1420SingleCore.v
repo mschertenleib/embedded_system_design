@@ -466,14 +466,6 @@ module or1420SingleCore ( input wire         clock12MHz,
                       .iseId(s_cpu1CiN),
                       .done(s_rgb2grayDone),
                       .result(s_rgb2grayResult));
-
-  rgb565grayParallelIse #(.customInstructionId(8'hE)) rgb2gray4
-                      (.start(s_cpu1CiStart),
-                      .valueA(s_cpu1CiDataA),
-                      .valueB(s_cpu1CiDataB),
-                      .iseId(s_cpu1CiN),
-                      .done(s_rgb4Done),
-                      .result(s_rgb4Result));
             
   /*
    *
