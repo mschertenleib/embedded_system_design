@@ -4,6 +4,8 @@
 
 #include <stdio.h>
 
+#define SINGLEPX // UNOPT,SINGLEPX,PARALLEL 
+
 typedef enum {
   COUNTER_CYCLES = 0,
   COUNTER_STALL = 1,
@@ -34,6 +36,7 @@ static uint32_t read_counter(CounterType counterId) {
   return result;
 }
 
+#ifdef SINGLEPX
 static uint32_t rgb2gray(uint32_t pixelrgb) {
   uint32_t result;
   asm volatile("l.nios_rrr %[out1],%[in1],r0,0xD"
@@ -41,6 +44,22 @@ static uint32_t rgb2gray(uint32_t pixelrgb) {
                : [in1] "r"(pixelrgb));
   return result;
 }
+#endif
+
+#ifdef PARALLEL
+void rgb2gray_parallel( uint8_t** result,uint16_t** px) {
+  uint32_t temp;
+  uint32_t** px01 = (uint32_t**) px;
+  uint32_t** px23 = (uint32_t**) (px+2); 
+  asm volatile("l.nios_rrr %[out1],%[in1],%[in2],0xE"
+               : [out1] "=r"(temp)
+               : [in1] "r"(**px01) [in2] "r"(**px23));
+  result[0] = (uint8_t)(temp >>(3*8));
+  result[1] = (uint8_t)((temp >>(2*8)) & 0x000F);
+  result[2] = (uint8_t)((temp >>(1*8)) & 0x000F);
+  result[3] = (uint8_t)((temp >>(0*8)) & 0x000F);
+}
+#endif
 
 static void control_counters(uint32_t control) {
   asm volatile("l.nios_rrr r0,r0,%[in2],0x0C" ::[in2] "r"(control));
@@ -80,20 +99,31 @@ int main() {
     control_counters(RESET_CYCLES | RESET_BUS_IDLE | RESET_STALL | RESET_CYCLES_2);
     control_counters(ENABLE_CYCLES | ENABLE_STALL | ENABLE_BUS_IDLE | ENABLE_CYCLES_2);
     //start of conversion
+    #ifdef UNOPT
     for (int line = 0; line < camParams.nrOfLinesPerImage; line++) {
       for (int pixel = 0; pixel < camParams.nrOfPixelsPerLine; pixel++) {
-        /*
         uint16_t rgb = swap_u16(rgb565[line * camParams.nrOfPixelsPerLine + pixel]);
         uint32_t red1 = ((rgb >> 11) & 0x1F) << 3;
         uint32_t green1 = ((rgb >> 5) & 0x3F) << 2;
         uint32_t blue1 = (rgb & 0x1F) << 3;
         uint32_t gray = ((red1 * 54 + green1 * 183 + blue1 * 19) >> 8) & 0xFF;
         grayscale[line * camParams.nrOfPixelsPerLine + pixel] = gray;
-        */
+      }
+    }
+    #endif
+    #ifdef SINGLEPX
+    for (int line = 0; line < camParams.nrOfLinesPerImage; line++) {
+      for (int pixel = 0; pixel < camParams.nrOfPixelsPerLine; pixel++) {
         uint32_t rgb = rgb565[line * camParams.nrOfPixelsPerLine + pixel];
         grayscale[line * camParams.nrOfPixelsPerLine + pixel] = 2*rgb2gray((uint32_t)rgb);
       }
     }
+    #endif
+    #ifdef PARALLEL
+    for (int px = 0; px < camParams.nrOfLinesPerImage*camParams.nrOfPixelsPerLine; px += 4) {
+        rgb2gray_parallel(grayscale[px],rgb565[px]);
+    }
+    #endif
     control_counters(DISABLE_CYCLES | DISABLE_BUS_IDLE | DISABLE_STALL | DISABLE_CYCLES_2);
     stall = read_counter(COUNTER_STALL);
     idle = read_counter(COUNTER_BUS_IDLE);
