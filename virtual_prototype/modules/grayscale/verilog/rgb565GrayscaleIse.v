@@ -20,7 +20,14 @@ module rgb565GrayscaleIse #(
       .grayscale(four_pixels_grayscale)
   );
 
-  wire enable = (ciN == customInstructionId) ? start : 1'b0;
+  /*
+  assign result[7:0]   = four_pixels_grayscale[7:0];
+  assign result[15:8]  = four_pixels_grayscale[15:8];
+  assign result[23:16] = four_pixels_grayscale[23:16];
+  assign result[31:24] = four_pixels_grayscale[31:24];
+  */
+
+  wire enable = (iseId == customInstructionId) ? start : 1'b0;
   assign done   = enable;
   assign result = enable ? four_pixels_grayscale : 32'd0;
 

@@ -21,7 +21,7 @@ module rgb565Grayscale (
   assign scaled_blue = (blue << 4) + (blue << 1) + blue;
 
   wire [15:0] scaled_sum;
-  assign scaled_sum = red_scaled + scaled_green + scaled_blue;
+  assign scaled_sum = scaled_red + scaled_green + scaled_blue;
   assign grayscale  = scaled_sum >> 8;
 
 endmodule
