@@ -1,5 +1,3 @@
-../../../modules/profile/verilog/profileCi.v
-../../../modules/profile/verilog/counter.v
 ../../../modules/bios/verilog/bios1_rom.v
 ../../../modules/bios/verilog/bios.v
 ../../../modules/bus_arbiter/verilog/busArbiter.v
@@ -17,6 +15,10 @@
 ../../../modules/spi/verilog/spiBus.v
 ../../../modules/i2c/verilog/i2cMaster.v
 ../../../modules/i2c/verilog/i2cCustomInstr.v
+../../../modules/profileCi/verilog/counter.v
+../../../modules/profileCi/verilog/profileCi.v
+../../../modules/grayscale/verilog/rgb565GrayscaleIse.v
+../../../modules/grayscale/verilog/rgb565Grayscale.v
 ../../../modules/camera/verilog/camera.v
 ../../../modules/delay/verilog/delayIse.v
 ../../../modules/swapbyteIse/verilog/swapByteIse.v

@@ -1,8 +1,10 @@
 #include <ov7670.h>
 #include <swap.h>
 #include <vga.h>
-
+#include <stdalign.h>
 #include <stdio.h>
+
+#define PARALLEL// UNOPT,SINGLEPX,PARALLEL
 
 typedef enum {
   COUNTER_CYCLES = 0,
@@ -28,19 +30,39 @@ typedef enum {
 
 static uint32_t read_counter(CounterType counterId) {
   uint32_t result;
-  asm volatile("l.nios_rrr %[out1],%[in1],r0,0x08"
+  asm volatile("l.nios_rrr %[out1],%[in1],r0,0xC"
                : [out1] "=r"(result)
                : [in1] "r"(counterId));
   return result;
 }
 
+static uint32_t rgb565Grayscale(uint32_t pixels_1_0, uint32_t pixels_3_2) {
+  uint32_t result;
+  asm volatile("l.nios_rrr %[out1],%[in1],%[in2],0xD"
+               : [out1] "=r"(result)
+               : [in1] "r"(pixels_1_0), [in2] "r"(pixels_3_2));
+  return result;
+}
+
+static uint8_t rgb2gray(uint16_t rgb565) {
+  uint32_t px = (uint32_t)rgb565;
+  return (uint8_t)rgb565Grayscale(px, 0);
+}
+
+static void rgb2gray_parallel(volatile uint8_t *result, const volatile uint16_t *px) {
+  uint32_t* imgptr = (uint32_t*) px;
+  uint32_t gray = rgb565Grayscale(imgptr[1], imgptr[0]);
+  uint32_t* ptrres = (uint32_t*)result;
+  *ptrres = gray;
+}
+
 static void control_counters(uint32_t control) {
-  asm volatile("l.nios_rrr r0,r0,%[in2],0x08" ::[in2] "r"(control));
+  asm volatile("l.nios_rrr r0,r0,%[in2],0x0C" ::[in2] "r"(control));
 }
 
 int main() {
-  volatile uint16_t rgb565[640 * 480];
-  volatile uint8_t grayscale[640 * 480];
+  alignas(uint32_t) volatile uint16_t rgb565[640 * 480];
+  alignas(uint32_t) volatile uint8_t grayscale[640 * 480];
   volatile uint32_t result, cycles, stall, idle;
   volatile unsigned int *vga = (unsigned int *)0X50000020;
   camParameters camParams;
@@ -72,10 +94,10 @@ int main() {
     control_counters(RESET_CYCLES | RESET_BUS_IDLE | RESET_STALL | RESET_CYCLES_2);
     control_counters(ENABLE_CYCLES | ENABLE_STALL | ENABLE_BUS_IDLE | ENABLE_CYCLES_2);
     //start of conversion
+    #ifdef UNOPT
     for (int line = 0; line < camParams.nrOfLinesPerImage; line++) {
       for (int pixel = 0; pixel < camParams.nrOfPixelsPerLine; pixel++) {
-        uint16_t rgb =
-            swap_u16(rgb565[line * camParams.nrOfPixelsPerLine + pixel]);
+        uint16_t rgb = swap_u16(rgb565[line * camParams.nrOfPixelsPerLine + pixel]);
         uint32_t red1 = ((rgb >> 11) & 0x1F) << 3;
         uint32_t green1 = ((rgb >> 5) & 0x3F) << 2;
         uint32_t blue1 = (rgb & 0x1F) << 3;
@@ -83,10 +105,22 @@ int main() {
         grayscale[line * camParams.nrOfPixelsPerLine + pixel] = gray;
       }
     }
+    #elif defined(SINGLEPX)
+        for (int px = 0; px < camParams.nrOfLinesPerImage * camParams.nrOfPixelsPerLine; ++px) {
+          grayscale[px] = rgb2gray(rgb565[px]);
+        }
+    #elif defined(PARALLEL)
+        for (int px = 0;
+            px < camParams.nrOfLinesPerImage * camParams.nrOfPixelsPerLine;
+            px += 4) {
+          rgb2gray_parallel(&grayscale[px], &rgb565[px]);
+        }
+    #endif
+
     control_counters(DISABLE_CYCLES | DISABLE_BUS_IDLE | DISABLE_STALL | DISABLE_CYCLES_2);
     stall = read_counter(COUNTER_STALL);
     idle = read_counter(COUNTER_BUS_IDLE);
     cycles = read_counter(COUNTER_CYCLES);
-    printf("Cycles: %lu Stall: %lu Bus Idle: %lu\n", cycles,stall,idle);
+    printf("C: %lu S: %lu BI: %lu Eff: %lu\n", cycles, stall, idle, cycles - stall);
   }
 }
