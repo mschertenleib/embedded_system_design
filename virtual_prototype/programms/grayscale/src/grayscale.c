@@ -114,7 +114,7 @@ int main() {
     #ifdef SINGLEPX
     for (int line = 0; line < camParams.nrOfLinesPerImage; line++) {
       for (int pixel = 0; pixel < camParams.nrOfPixelsPerLine; pixel++) {
-        uint32_t rgbpx = rgb565[line * camParams.nrOfPixelsPerLine + pixel];
+        uint32_t rgbpx = swap_u16(rgb565[line * camParams.nrOfPixelsPerLine + pixel]);
         grayscale[line * camParams.nrOfPixelsPerLine + pixel] = rgb2gray(rgbpx,0);
       }
     }
