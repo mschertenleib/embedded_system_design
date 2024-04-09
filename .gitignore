@@ -6,4 +6,6 @@ sandbox/
 db/
 *.vcd
 testbench
+*.cdb
+*.hdb
 
