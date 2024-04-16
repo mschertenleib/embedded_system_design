@@ -10,28 +10,39 @@ module ramDmaCi #(
     output wire        done,
     output wire [31:0] result
 );
-  reg  [31:0] memory                                                 [512];
-  reg  [ 8:0] address;
-  reg         in_a_write;
+  wire active = (ciN == customId) ? start : 1'b0;
+  wire address_A_valid = (valueA[31:10] == 22'd0);
+  wire write_enable = active & valueA[9] & address_A_valid;
+  wire read_enable = active & !valueA[9] & address_A_valid;
 
-  wire        active = (ciN == customId) ? start : 1'b0;
-  wire        write_enable = valueA[9];
-  wire        address_A_valid = (valueA[31:10] == 22'd0);
-  wire        read_enable = (active & !in_a_write & address_A_valid);
+  wire [31:0] data_out_A;
+  wire [8:0] address_A = (active & address_A_valid) ? valueA[8:0] : 9'b0;
+
+  reg data_ready = 1'b0;
+
+  dualPortSSRAM #(
+      .bitwidth(32),
+      .nrOfEntries(512),
+      .readAfterWrite(0)
+  ) ssram (
+      .clockA(clock),
+      .clockB(1'b0),
+      .writeEnableA(write_enable),
+      .writeEnableB(1'b0),
+      .addressA(address_A),
+      .addressB(9'b0),
+      .dataInA(valueB),
+      .dataInB(32'b0),
+      .dataOutA(data_out_A),
+      .dataOutB()
+  );
 
   always @(posedge clock) begin
-    if (active & address_A_valid & !in_a_write & write_enable) begin
-      // Set the address
-      address <= valueA[8:0];
-      in_a_write <= 1'b1;
-    end else if (active & in_a_write & write_enable) begin
-      // Store the data
-      memory[address] <= valueA;
-      in_a_write <= 1'b0;
-    end
+    if (read_enable) data_ready <= 1'b1;
   end
 
-  assign result = read_enable ? memory[valueA[8:0]] : 32'd0;
+  assign done   = active ? (read_enable ? data_ready : 1'b1) : 1'b0;
+  assign result = read_enable ? data_out_A : 32'b0;
 
 endmodule
 
