@@ -25,7 +25,14 @@ begin
         busy <= 1'b0;
     end
     else ptrA <= valueA[8:0];
+
     if(writea_en & validA) busy = 1'b1;
+
+    if(reset == 1'b1)begin
+        for(integer i = 0 ; i < 512 ; i=i+1 ) begin
+            memory[i] = 32'd0;
+        end
+    end
 end
 
 assign result = (s_isMyCi) ? memory[ptrA] : 32'd0;

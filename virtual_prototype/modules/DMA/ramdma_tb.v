@@ -11,7 +11,10 @@ module ramdma_TB;
 
     initial 
     begin
+        reset = 1'b1;
         clock = 1'b0;                 /* set the initial values */
+        repeat (4) #5 clock = ~clock; /* generate 2 clock periods */
+        reset = 1'b0;                 /* de-activate the reset */
         forever #5 clock = ~clock;    /* generate a clock with a period of 10 time-units */
     end
 
@@ -41,15 +44,16 @@ module ramdma_TB;
         valueA = 32'd0;
         cpu_start_sig = 1'b1;
         cpu_Cin_sig = 8'd14;
-        repeat(10) @(negedge clock);
         repeat(255) @(negedge clock) valueA[8:0] = valueA[8:0] + 1'b1;
         valueA = 32'd0;
         repeat(255) @(negedge clock) 
         begin
             valueA[9] = 1'b1;
-            valueA[8:0] = valueA[8:0] + 1'b1;
+            valueA[8:0] = valueA[8:0] + 8'd2;
             @(negedge clock) valueA[9] = 1'b0;
         end 
+        valueA = 32'd0;
+        repeat(255) @(negedge clock) valueA[8:0] = valueA[8:0] + 1'b1;
         $finish;
     end
 
