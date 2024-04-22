@@ -11,25 +11,25 @@ wire[8:0]   addrA,addrB;
 wire        writeA,writeB;
 
 // internal dualport sram
-dualPortSSRAM #() internalmem ( .clockA(clock),
-                            .clockB(clock),
-                            .writeEnableA(writeA),
-                            .writeEnableB(writeB),
-                            .addressA(addrA),
-                            .addressB(addrB),
-                            .dataInA(dataA),
-                            .dataInB(dataB),
-                            .dataOutA(outA),
-                            .dataOutB(outB));
+dualPortSSRAM internalmem (.clockA(clock),
+                .clockB(clock),
+                .writeEnableA(writeA),
+                .writeEnableB(writeB),
+                .addressA(addrA),
+                .addressB(addrB),
+                .dataInA(dataA),
+                .dataInB(dataB),
+                .dataOutA(outA),
+                .dataOutB(outB));
 
-
-// bus interface
+//Bus Interface
 assign writeB = 1'b0;
 assign dataB = 32'd0;
 assign addrB = 8'd0;
 
 //CPU interface
 reg isreading;
+reg[8:0] readaddr;
 reg[31:0] sramout;
 wire isvalid = (valueA[31:10] == 22'd0) ? 1'b1 : 1'b0;
 
@@ -37,22 +37,26 @@ wire s_isMyCi = (ciN == customId) ? start : 1'b0;
 assign done = s_isMyCi && !isreading;
 
 assign writeA = valueA[9] && isvalid;
-assign addrA = valueA[8:0];
+assign addrA = readaddr;
 assign dataA = valueB;
 
 
-@(posedge clock)begin
+always @(posedge clock)begin
     if(reset || writeA)begin
-         isreading = 1'b0;
-         sramout = 32'b0;
+        isreading = 1'b0;
+        sramout = 32'b0;
+        readaddr = 9'b0;
     end
-    if(!writeA && !isreading) isreading = 1'b1;
+    if(!writeA && !isreading)begin
+        isreading = 1'b1;
+        readaddr = valueA[8:0];
+    end
     else isreading = 1'b0;
 
     if(isreading) sramout = outA;
+    else readaddr = valueA[8:0];
 end
 
-
-
+assign result = (done) ? sramout : 32'b0;
 
 endmodule

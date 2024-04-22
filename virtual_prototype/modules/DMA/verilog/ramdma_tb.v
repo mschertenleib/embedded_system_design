@@ -18,9 +18,8 @@ module ramdma_TB;
         forever #5 clock = ~clock;    /* generate a clock with a period of 10 time-units */
     end
 
-
     ramDmaCi #(
-        .customId(8'd14)
+        .customId(8'h0F)
     ) DUT (
         .start (cpu_start_sig),
         .valueA(valueA),
@@ -43,17 +42,22 @@ module ramdma_TB;
         valueB = 32'd0;
         valueA = 32'd0;
         cpu_start_sig = 1'b1;
-        cpu_Cin_sig = 8'd14;
-        repeat(255) @(negedge clock) valueA[8:0] = valueA[8:0] + 1'b1;
+        cpu_Cin_sig = 8'h0F;
+        @(negedge reset);
+
+        valueA[9] = 1'b1;
+        repeat(10) @(negedge clock) begin
+            valueA[8:0] = valueA[8:0] + 1'b1;
+            valueB = valueB + 1'b1;
+        end
+
+        valueB = 32'd0;
         valueA = 32'd0;
-        repeat(255) @(negedge clock) 
-        begin
-            valueA[9] = 1'b1;
-            valueA[8:0] = valueA[8:0] + 8'd2;
-            @(negedge clock) valueA[9] = 1'b0;
-        end 
-        valueA = 32'd0;
-        repeat(255) @(negedge clock) valueA[8:0] = valueA[8:0] + 1'b1;
+        repeat(10) @(posedge clock) begin
+            repeat(5) @(negedge clock);
+            valueA[8:0] = valueA[8:0] + 1'b1;
+        end
+
         $finish;
     end
 
