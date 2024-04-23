@@ -26,8 +26,9 @@ int main() {
   vga_clear();
 
   for (uint16_t i = 0; i < 512; ++i) {
+    printf("Writing %d at %X\n", i, i);
     writeDMA(i, i);
     const uint32_t res = readDMA(i);
-    printf("wrote %d at %X and read %d", i, i, res);
+    printf("Read %d at %X\n", res, i);
   }
 }
