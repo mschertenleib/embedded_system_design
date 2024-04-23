@@ -17,13 +17,13 @@ module dualPortSSRAM #(
 
   reg [bitwidth-1 : 0] memoryContent[nrOfEntries];
   always @(posedge clockA) begin
-    if (readAfterWrite != 0) dataOutA <= memoryContent[addressA];
-    if (writeEnableA == 1'b1) memoryContent[addressA] = dataInA;
     if (readAfterWrite == 0) dataOutA <= memoryContent[addressA];
+    if (writeEnableA == 1'b1) memoryContent[addressA] = dataInA;
+    if (readAfterWrite != 0) dataOutA <= memoryContent[addressA];
   end
   always @(posedge clockB) begin
-    if (readAfterWrite != 0) dataOutB <= memoryContent[addressB];
-    if (writeEnableB == 1'b1) memoryContent[addressB] = dataInB;
     if (readAfterWrite == 0) dataOutB <= memoryContent[addressB];
+    if (writeEnableB == 1'b1) memoryContent[addressB] = dataInB;
+    if (readAfterWrite != 0) dataOutB <= memoryContent[addressB];
   end
 endmodule

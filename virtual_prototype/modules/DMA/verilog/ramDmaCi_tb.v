@@ -40,12 +40,17 @@ module ramDmaCi_tb;
       s_valueA = valA;
       s_valueB = valB;
       #1;
-      if ((done == expDone) && (result == expRes)) $write("\033[1;32m");
-      else $write("\033[1;31m");
-      $display(
-          "[%s] start=%b, ciN=%0d, valueA=%0h, valueB=%0h => done=%b (exp %b), result=%0h (exp %0h)",
-          ((done == expDone) && (result == expRes)) ? "OK " : "ERR", s_start, s_ciN, s_valueA,
-          s_valueB, done, expDone, result, expRes);
+      if ((done == expDone) && (result == expRes)) begin
+        $write("\033[1;32m");
+        $display(
+            "[PASSED] start=%b, ciN=%0d, valueA=%0h, valueB=%0h => done=%b (exp %b), result=%0h (exp %0h)",
+            s_start, s_ciN, s_valueA, s_valueB, done, expDone, result, expRes);
+      end else begin
+        $write("\033[1;31m");
+        $display(
+            "[FAILED] start=%b, ciN=%0d, valueA=%0h, valueB=%0h => done=%b (exp %b), result=%0h (exp %0h)",
+            s_start, s_ciN, s_valueA, s_valueB, done, expDone, result, expRes);
+      end
       $write("\033[0m");
     end
   endtask
@@ -53,24 +58,23 @@ module ramDmaCi_tb;
 
   initial begin
     // Check that instruction only activates on start and correct ciN
-    test(.start(1'b0), .ciN(8'd7), .valA(32'd0), .valB(32'd0), .expDone(1'b0), .expRes(32'b0));
-    test(.start(1'b1), .ciN(8'd7), .valA(32'd0), .valB(32'd0), .expDone(1'b0), .expRes(32'b0));
-    test(.start(1'b0), .ciN(8'd14), .valA(32'd0), .valB(32'd0), .expDone(1'b0), .expRes(32'b0));
+    test(.start(1'b0), .ciN(8'd7), .valA(32'h0), .valB(32'h0), .expDone(1'b0), .expRes(32'h0));
+    test(.start(1'b1), .ciN(8'd7), .valA(32'h0), .valB(32'h0), .expDone(1'b0), .expRes(32'h0));
+    test(.start(1'b0), .ciN(8'd14), .valA(32'h0), .valB(32'h0), .expDone(1'b0), .expRes(32'h0));
 
+    // Write then read at address 0
+    test(.start(1'b1), .ciN(8'd14), .valA(32'h200), .valB(32'h42), .expDone(1'h1), .expRes(32'h0));
+    @(negedge clock);
+    test(.start(1'b1), .ciN(8'd14), .valA(32'h000), .valB(32'h0), .expDone(1'h0), .expRes(32'h0));
+    @(negedge clock);
+    test(.start(1'b1), .ciN(8'd14), .valA(32'h000), .valB(32'h0), .expDone(1'b1), .expRes(32'h42));
 
-    test(.start(1'b1), .ciN(8'd14), .valA(32'd0), .valB(32'd0), .expDone(1'b0), .expRes(32'b0));
-    repeat (1) @(negedge clock);
-    test(.start(1'b1), .ciN(8'd14), .valA(32'd0), .valB(32'd0), .expDone(1'b1), .expRes(32'b0));
-
-    /*
-    repeat (255) @(negedge clock) s_valueA[8:0] = s_valueA[8:0] + 1'b1;
-    s_valueA = 32'd0;
-    repeat (255)
-    @(negedge clock) begin
-      s_valueA[9]   = 1'b1;
-      s_valueA[8:0] = s_valueA[8:0] + 1'b1;
-      @(negedge clock) s_valueA[9] = 1'b0;
-    end*/
+    // Write then read at a random address
+    test(.start(1'b1), .ciN(8'd14), .valA(32'h237), .valB(32'h57), .expDone(1'b1), .expRes(32'h0));
+    @(negedge clock);
+    test(.start(1'b1), .ciN(8'd14), .valA(32'h037), .valB(32'h0), .expDone(1'b0), .expRes(32'h0));
+    @(negedge clock);
+    test(.start(1'b1), .ciN(8'd14), .valA(32'h037), .valB(32'h0), .expDone(1'b1), .expRes(32'h57));
 
     $finish;
   end
