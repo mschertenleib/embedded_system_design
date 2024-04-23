@@ -37,14 +37,11 @@ module ramDmaCi #(
       .dataOutB()
   );
 
-  always @(posedge clock) begin
-    if (read_enable) data_ready <= 1'b1;
-  end
-
   assign done   = active ? (read_enable ? data_ready : 1'b1) : 1'b0;
   assign result = (read_enable & data_ready) ? data_out_A : 32'b0;
 
   always @(posedge clock) begin
+    if (read_enable) data_ready <= 1'b1;
     if (done) data_ready <= 1'b0;
   end
 

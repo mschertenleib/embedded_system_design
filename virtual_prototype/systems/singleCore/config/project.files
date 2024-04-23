@@ -54,6 +54,6 @@
 ../../../modules/support/verilog/sram_512x32.v
 ../../../modules/support/verilog/sram_1024x16_dp.v
 ../../../modules/support/verilog/sram2048x8Dp.v
-../../../modules/DMA/verilog/ramdmaCi.v
-../../../modules/dualSRAM/verilog/dualSRAM.v
+../../../modules/DMA/verilog/ramDmaCi.v
+../../../modules/DMA/verilog/dualPortSSRAM.v
 ../verilog/or1420SingleCore.v
