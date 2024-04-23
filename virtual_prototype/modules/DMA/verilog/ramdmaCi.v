@@ -47,14 +47,16 @@ always @(posedge clock)begin
         sramout = 32'b0;
         readaddr = 9'b0;
     end
+    
+    if(isreading) sramout = outA;
+    else readaddr = valueA[8:0];
+
     if(!writeA && !isreading)begin
         isreading = 1'b1;
         readaddr = valueA[8:0];
     end
     else isreading = 1'b0;
 
-    if(isreading) sramout = outA;
-    else readaddr = valueA[8:0];
 end
 
 assign result = (done) ? sramout : 32'b0;

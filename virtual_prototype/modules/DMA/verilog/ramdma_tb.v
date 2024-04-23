@@ -53,8 +53,8 @@ module ramdma_TB;
 
         valueB = 32'd0;
         valueA = 32'd0;
-        repeat(10) @(posedge clock) begin
-            repeat(5) @(negedge clock);
+        repeat(10) @(negedge clock) begin
+            @(negedge clock);
             valueA[8:0] = valueA[8:0] + 1'b1;
         end
 

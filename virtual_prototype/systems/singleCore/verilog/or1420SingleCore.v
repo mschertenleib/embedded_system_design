@@ -466,6 +466,21 @@ module or1420SingleCore ( input wire         clock12MHz,
                       .iseId(s_cpu1CiN),
                       .done(s_rgb2grayDone),
                       .result(s_rgb2grayResult));
+
+  /*
+   *
+   * ramDMA Custom instruction 
+   *
+   */
+  ramDmaCi #( .customId(8'h0F)) intdDualDMA
+            ( .start(s_cpu1CiStart),
+              .clock(s_systemClock),
+              .reset(s_cpuReset),
+              .valueA(s_cpu1CiDataA),
+              .valueB(s_cpu1CiDataB),
+              .ciN(s_cpu1CiN),
+              .done(s_rgb2grayDone),
+              .result(s_rgb2grayResult));
             
   /*
    *
