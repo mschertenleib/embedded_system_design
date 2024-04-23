@@ -10,16 +10,15 @@ module ramDmaCi #(
     output wire        done,
     output wire [31:0] result
 );
-  wire active = (ciN == customId) & start;
+  wire active = (ciN == customId) ? start : 1'b0;
   wire address_A_valid = (valueA[31:10] == 22'd0);
   wire write_enable = active & valueA[9] & address_A_valid;
   wire read_enable = active & !valueA[9] & address_A_valid;
-  wire data_ready = reading & (ciN == customId) & !start & !valueA[9] & address_A_valid;
 
   wire [31:0] data_out_A;
   wire [8:0] address_A = (active & address_A_valid) ? valueA[8:0] : 9'b0;
 
-  reg reading = 1'b0;
+  reg data_ready = 1'b0;
 
   dualPortSSRAM #(
       .bitwidth(32),
@@ -38,12 +37,12 @@ module ramDmaCi #(
       .dataOutB()
   );
 
-  assign done   = write_enable | data_ready | (active & !address_A_valid);
+  assign done   = data_ready | write_enable | (active & !address_A_valid);
   assign result = data_ready ? data_out_A : 32'b0;
 
   always @(posedge clock) begin
-    if (read_enable) reading <= 1'b1;
-    if (done) reading <= 1'b0;
+    if (read_enable) data_ready <= 1'b1;
+    if (done) data_ready <= 1'b0;
   end
 
 endmodule

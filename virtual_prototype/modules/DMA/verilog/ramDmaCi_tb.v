@@ -67,14 +67,15 @@ module ramDmaCi_tb;
     @(negedge clock);
     test(.start(1'b1), .ciN(8'd14), .valA(32'h000), .valB(32'h0), .expDone(1'h0), .expRes(32'h0));
     @(negedge clock);
-    test(.start(1'b0), .ciN(8'd14), .valA(32'h000), .valB(32'h0), .expDone(1'b1), .expRes(32'h42));
+    test(.start(1'b0), .ciN(8'd0), .valA(32'h000), .valB(32'h0), .expDone(1'b1), .expRes(32'h42));
+    @(negedge clock);
 
     // Write then read at a random address
     test(.start(1'b1), .ciN(8'd14), .valA(32'h237), .valB(32'h57), .expDone(1'b1), .expRes(32'h0));
     @(negedge clock);
     test(.start(1'b1), .ciN(8'd14), .valA(32'h037), .valB(32'h0), .expDone(1'b0), .expRes(32'h0));
     @(negedge clock);
-    test(.start(1'b0), .ciN(8'd14), .valA(32'h037), .valB(32'h0), .expDone(1'b1), .expRes(32'h57));
+    test(.start(1'b0), .ciN(8'd0), .valA(32'h037), .valB(32'h0), .expDone(1'b1), .expRes(32'h57));
 
     $finish;
   end
