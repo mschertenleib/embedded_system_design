@@ -1,15 +1,14 @@
-#include <stdio.h>
-#include <vga.h>
 #include <ov7670.h>
+#include <stdio.h>
 #include <swap.h>
-
+#include <vga.h>
 
 static void writeDMA(uint16_t addr,uint32_t data) {
   uint32_t regA,result;
   regA = addr | (1 << 9);
   asm volatile("l.nios_rrr r0,%[in1],%[in2],0xF"
                : [out1] "=r"(result)
-               : [in1] "r"(regA), [in2] "r"(data));
+               : [in1] "r"(regA), [in2] "r"(regB));
 }
 
 static uint32_t readDMA(uint16_t addr){

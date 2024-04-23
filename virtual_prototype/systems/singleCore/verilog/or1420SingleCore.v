@@ -325,7 +325,6 @@ module or1420SingleCore ( input wire         clock12MHz,
   wire        s_cpu1DataValid;
   wire [7:0]  s_cpu1BurstSize;
   wire        s_spm1Irq, s_profileDone, s_stall;
-
   wire[31:0]  s_rgb2grayResult;
   wire        s_rgb2grayDone;
 
@@ -472,10 +471,10 @@ module or1420SingleCore ( input wire         clock12MHz,
 
   /*
    *
-   * ramDMA Custom instruction 
+   * ramDMA Custom instruction
    *
    */
-  ramDmaCi #( .customId(8'h0F)) intdDualDMA
+  ramDmaCi #( .customId(8'hF)) dmaCi
             ( .start(s_cpu1CiStart),
               .clock(s_systemClock),
               .reset(s_cpuReset),
@@ -495,7 +494,7 @@ module or1420SingleCore ( input wire         clock12MHz,
   wire [31:0] s_camAddressData;
   wire [3:0] s_camByteEnables;
   wire [7:0] s_camBurstSize;
-  
+
   camera #(.customInstructionId(8'd7),
            .clockFrequencyInHz(74250000)) camIf
           (.clock(s_systemClock),
