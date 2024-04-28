@@ -4,7 +4,7 @@
 #include <vga.h>
 
 static void writeDMA(uint16_t addr,uint32_t data) {
-  uint32_t regA,result;
+  uint32_t regA,regB,result;
   regA = addr | (1 << 9);
   asm volatile("l.nios_rrr r0,%[in1],%[in2],0xF"
                : [out1] "=r"(result)
