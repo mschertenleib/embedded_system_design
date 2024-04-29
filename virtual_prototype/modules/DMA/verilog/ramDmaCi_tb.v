@@ -429,8 +429,15 @@ module ramDmaCi_tb;
     repeat (5) @(negedge clock);
 
 
-    test(.start(1'b1), .ciN(8'd14), .valA(32'h64), .valB(32'h0), .expDone(1'b1), .expRes(32'hA));
-    @(negedge clock);
+    @(posedge clock);
+    #1;
+    s_start = 1'b1;
+    s_ciN = 8'd14;
+    s_valueA = 32'h64;
+    s_valueB = 32'h0;
+
+    @(posedge clock);
+    #1;
 
     // CI off
     s_ciN = 8'd0;

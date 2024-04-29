@@ -474,7 +474,7 @@ module or1420SingleCore ( input wire         clock12MHz,
    * ramDMA Custom instruction
    *
    */
-  
+
   wire s_dmaReqBus, s_dmaAckBus, s_dmaBeginTransaction, s_dmaEndTransaction;
   wire s_dmaDataValid, s_dmaReadNotWrite;
   wire [31:0] s_dmaAddressData;
@@ -488,8 +488,8 @@ module or1420SingleCore ( input wire         clock12MHz,
               .valueA(s_cpu1CiDataA),
               .valueB(s_cpu1CiDataB),
               .ciN(s_cpu1CiN),
-              .done(s_ramDmaCiDone),
-              .result(s_ramDmaCiResult),
+              .done(s_DMADone),
+              .result(s_DMAResult),
               .granted(s_dmaAckBus),
               .address_data_in(s_addressData),
               .end_transaction_in(s_endTransaction),

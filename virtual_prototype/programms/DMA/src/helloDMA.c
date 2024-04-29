@@ -4,7 +4,10 @@
 #include <swap.h>
 #include <vga.h>
 
-#define CAMERA
+// #define CAMERA
+#define READ_WRITE_TEST
+// #define DMASTATE
+//  #define DMA_WRITE_SCREEN
 #define SRAM_ADDR 0x0000000
 #define SCREEN_ADDR 0x50000020
 
