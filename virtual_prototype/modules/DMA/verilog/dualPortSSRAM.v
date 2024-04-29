@@ -17,10 +17,10 @@ module dualPortSSRAM #(
 
   always @(posedge clock) begin
     if (writeEnableA == 1'b1) memoryContent[addressA] <= dataInA;
-    if (writeEnableB == 1'b1) memoryContent[addressB] <= dataInB;
   end
   always @(negedge clock) begin
     dataOutA <= memoryContent[addressA];
+    if (writeEnableB == 1'b1) memoryContent[addressB] <= dataInB;
     dataOutB <= memoryContent[addressB];
   end
 endmodule
