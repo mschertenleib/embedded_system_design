@@ -126,11 +126,13 @@ module ramDmaCi #(
   always @(posedge clock) begin
     block_count <= (state == IDLE) ? 10'd0 : (state == READING) ? block_count + 10'd1 : block_count;
     burst_count <= (state == READING) ? burst_count + 8'd1 : 8'd0;
-    bus_start_address <= (state == READING) ? bus_start_address + 32'd1 : bus_start_address;
-    memory_start_address <= (state == READING) ? memory_start_address + 9'd1 : memory_start_address;
+    if (state == READING) begin
+      bus_start_address <= bus_start_address + 32'd1;
+      memory_start_address <= memory_start_address + 9'd1;
+    end
     status_register[0] <= (state == IDLE) ? 1'b0 : 1'b1;
     status_register[1] <= (state == ERROR) ? 1'b1 : (state == REQUEST) ? 1'b0 : status_register[1];
-    control_register <= 1'b0;
+    control_register   <= 1'b0;
   end
 
 endmodule
