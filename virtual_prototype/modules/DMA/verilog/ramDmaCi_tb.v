@@ -260,6 +260,7 @@ module ramDmaCi_tb;
     // ******* Test read transfer error *******
     // ****************************************
 
+    repeat (3) @(negedge clock);
     // Set block size = 8, so a single transaction is necessary
     s_ciN = 8'd14;
     s_start = 1'b1;
@@ -425,8 +426,17 @@ module ramDmaCi_tb;
     error_in = 1'b1;
     @(negedge clock);
     error_in = 1'b0;
-    repeat (3) @(negedge clock);
+    repeat (5) @(negedge clock);
 
+
+    test(.start(1'b1), .ciN(8'd14), .valA(32'h64), .valB(32'h0), .expDone(1'b1), .expRes(32'hA));
+    @(negedge clock);
+
+    // CI off
+    s_ciN = 8'd0;
+    s_start = 1'b0;
+    s_valueA = 32'b0;
+    s_valueB = 32'b0;
 
 
     #50;

@@ -45,9 +45,6 @@ module ramDmaCi #(
   wire write_enable_B = ((state == READING) & data_valid_in) ? 1'b1 : 1'b0;
   wire [31:0] data_in_B = ((state == READING) & data_valid_in) ? address_data_in : 32'b0;
 
-  reg data_valid_out_B = 1'b0;
-
-  reg [31:0] data_out_B_reg;
 
   dualPortSSRAM #(
       .bitwidth(32),
@@ -103,8 +100,8 @@ module ramDmaCi #(
       end
       WRITING: begin
         if (error_in) state <= ERROR;
-        else if (burst_count == burst_size + 8'd1) begin  // End of burst
-          if (block_count == block_size) state <= IDLE;  // End of transfer
+        else if (burst_count == burst_size) begin  // End of burst
+          if (block_count + 10'd1 == block_size) state <= IDLE;  // End of transfer
           else state <= REQUEST_WRITE;  // Next burst
         end
       end
@@ -129,9 +126,7 @@ module ramDmaCi #(
       endcase
     end
 
-    if (state == REQUEST_WRITE) begin
-      data_valid_out_B <= 1'b0;
-    end else if (state == READING) begin
+    if (state == READING) begin
       if (data_valid_in) begin
         block_count <= block_count + 10'd1;
         burst_count <= burst_count + 8'd1;
@@ -139,8 +134,6 @@ module ramDmaCi #(
         memory_start_address <= memory_start_address + 9'd4;
       end
     end else if (state == WRITING) begin
-      data_valid_out_B <= 1'b1;
-      data_out_B_reg   <= data_out_B;
       if (~busy_in & (burst_count != burst_size + 8'd1)) begin
         block_count <= block_count + 10'd1;
         burst_count <= burst_count + 8'd1;
@@ -148,7 +141,6 @@ module ramDmaCi #(
         memory_start_address <= memory_start_address + 9'd4;
       end
     end else if (state == IDLE) begin
-      data_valid_out_B <= 1'b0;
       burst_count <= 8'd0;
       block_count <= 10'd0;
     end else begin
@@ -178,19 +170,16 @@ module ramDmaCi #(
 
   assign request = ((state == REQUEST_READ) | (state == REQUEST_WRITE)) ? 1'b1 : 1'b0;
   assign address_data_out = ((state == START_READ) | (state == START_WRITE))
-    ? bus_start_address
-    : ((state == WRITING) & data_valid_out_B)
-      ? data_out_B_reg
-      : 32'b0;
+    ? bus_start_address : (state == WRITING) ? data_out_B : 32'b0;
   assign byte_enables_out = ((state == START_READ) | (state == START_WRITE)) ? 4'b1111 : 4'b0;
   assign burst_size_out = ((state == START_READ) | (state == START_WRITE)) ? burst_size : 8'b0;
   assign read_n_write_out = (state == START_READ) ? 1'b1 : 1'b0;
   assign begin_transaction_out = ((state == START_READ) | (state == START_WRITE)) ? 1'b1 : 1'b0;
   assign end_transaction_out = ((state == ERROR)
-    | ((state == WRITING) & (burst_count == burst_size + 8'd1)))
+    | ((state == WRITING) & (burst_count == burst_size )))
     ? 1'b1
     : 1'b0;
-  assign data_valid_out = data_valid_out_B;
+  assign data_valid_out = (state == WRITING);
 
 
 endmodule
