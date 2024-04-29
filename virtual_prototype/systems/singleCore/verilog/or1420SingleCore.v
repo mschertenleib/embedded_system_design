@@ -474,6 +474,7 @@ module or1420SingleCore ( input wire         clock12MHz,
    * ramDMA Custom instruction
    *
    */
+  // FIXME: connect signals
   ramDmaCi #( .customId(8'hF)) dmaCi
             ( .start(s_cpu1CiStart),
               .clock(s_systemClock),
@@ -481,9 +482,23 @@ module or1420SingleCore ( input wire         clock12MHz,
               .valueA(s_cpu1CiDataA),
               .valueB(s_cpu1CiDataB),
               .ciN(s_cpu1CiN),
-              .done(s_DMADone),
-              .result(s_DMAResult));
-            
+              .done(s_ramDmaCiDone),
+              .result(s_ramDmaCiResult),
+              .granted(),
+              .address_data_in(),
+              .end_transaction_in(),
+              .data_valid_in(),
+              .busy_in(),
+              .error_in(),
+              .request(),
+              .address_data_out(),
+              .byte_enables_out(),
+              .burst_size_out(),
+              .read_n_write_out(),
+              .begin_transaction_out(),
+              .end_transaction_out(),
+              .data_valid_out());
+
   /*
    *
    * Here we define the camera interface
