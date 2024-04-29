@@ -83,6 +83,9 @@ module ramDmaCi_tb;
     $dumpvars(1, DUT);
   end
 
+
+  integer i;
+
   initial begin
     // Check that the instruction only activates on start and correct ciN
     $display("Activation");
@@ -150,7 +153,11 @@ module ramDmaCi_tb;
     s_valueB = 32'b0;
     repeat (2) @(negedge clock);
 
+
+
+    // ***********************************************
     // ********  Simulate a read from the bus ********
+    // ***********************************************
 
     s_ciN = 8'd14;
     s_start = 1'b1;
@@ -194,15 +201,24 @@ module ramDmaCi_tb;
     @(negedge clock);
     // Now the burst transfer happens
     data_valid_in = 1'b1;
-    repeat (1) @(negedge clock);
+    repeat (1) begin
+      address_data_in = address_data_in + 1;
+      @(negedge clock);
+    end
     data_valid_in = 1'b0;
     repeat (1) @(negedge clock);
     data_valid_in = 1'b1;
-    repeat (4) @(negedge clock);
+    repeat (4) begin
+      address_data_in = address_data_in + 1;
+      @(negedge clock);
+    end
     data_valid_in = 1'b0;
     repeat (2) @(negedge clock);
     data_valid_in = 1'b1;
-    repeat (3) @(negedge clock);
+    repeat (3) begin
+      address_data_in = address_data_in + 1;
+      @(negedge clock);
+    end
     data_valid_in = 1'b0;
     end_transaction_in = 1'b1;
     @(negedge clock);
@@ -220,17 +236,21 @@ module ramDmaCi_tb;
       @(negedge clock);
       // Now the burst transfer happens
       data_valid_in = 1'b1;
-      repeat (8) @(negedge clock);
+      repeat (8) begin
+        address_data_in = address_data_in + 1;
+        @(negedge clock);
+      end
       data_valid_in = 1'b0;
       end_transaction_in = 1'b1;
       @(negedge clock);
       end_transaction_in = 1'b0;
     end
 
-    // At this point the first block transfer should have succeeded
 
 
-    // ******* Test transfer error *******
+    // ****************************************
+    // ******* Test read transfer error *******
+    // ****************************************
 
     // Set block size = 8, so a single transaction is necessary
     s_ciN = 8'd14;
@@ -260,15 +280,136 @@ module ramDmaCi_tb;
     @(negedge clock);
     // Now the burst transfer happens
     data_valid_in = 1'b1;
-    repeat (3) @(negedge clock);
+    repeat (3) begin
+      address_data_in = address_data_in + 1;
+      @(negedge clock);
+    end
     data_valid_in = 1'b0;
     error_in = 1'b1;
     @(negedge clock);
     error_in = 1'b0;
+    repeat (3) @(negedge clock);
+
+
+
+    // *******************************************************************
+    // ****** Check that the DMA does not start if control == 0b11 *******
+    // *******************************************************************
+
+    s_ciN = 8'd14;
+    s_start = 1'b1;
+    s_valueA = 4'b1011 << 9;
+    s_valueB = 32'h3;
+    repeat (3) @(negedge clock);
+    // Here the controller should be staying idle
+
+
+
+    // **********************************************
+    // ********  Simulate a write to the bus ********
+    // **********************************************
+
+    s_ciN = 8'd14;
+    s_start = 1'b1;
+
+    // Bus address = 0x17
+    s_valueA = 4'b0011 << 9;
+    s_valueB = 32'h17;
+    @(negedge clock);
+    // Memory address = 0x40
+    s_valueA = 4'b0101 << 9;
+    s_valueB = 32'h40;
+    @(negedge clock);
+    // Block size = 16 = 0x10
+    s_valueA = 4'b0111 << 9;
+    s_valueB = 32'h10;
+    @(negedge clock);
+    // Burst size = 3 (= 4 words)
+    s_valueA = 4'b1001 << 9;
+    s_valueB = 32'h3;
     @(negedge clock);
 
+    // Start DMA
+    s_valueA = 4'b1011 << 9;
+    s_valueB = 32'h2;
+    @(negedge clock);
 
-    #20;
+    // CI off
+    s_ciN = 8'd0;
+    s_start = 1'b0;
+    s_valueA = 32'b0;
+    s_valueB = 32'b0;
+
+    // ******* First burst *******
+    // Wait for a request
+    if (~request) @(posedge request);
+    repeat (2) @(negedge clock);
+    granted = 1'b1;
+    @(negedge clock);
+    // Now the controller sends address and burst info
+    granted = 1'b0;
+    @(negedge clock);
+    // Now the burst transfer happens
+    busy_in = 1'b0;
+    repeat (1) @(negedge clock);
+    busy_in = 1'b1;
+    repeat (2) @(negedge clock);
+    busy_in = 1'b0;
+    repeat (3) @(negedge clock);
+
+    // ******* Other 3 bursts *******
+    repeat (3) begin
+      if (~request) @(posedge request);
+      repeat (2) @(negedge clock);
+      granted = 1'b1;
+      @(negedge clock);
+      granted = 1'b0;
+      @(negedge clock);
+      repeat (4) @(negedge clock);
+    end
+
+
+
+    // *****************************************
+    // ******* Test write transfer error *******
+    // *****************************************
+
+    // Set block size = 4, so a single transaction is necessary
+    s_ciN = 8'd14;
+    s_start = 1'b1;
+    s_valueA = 4'b0111 << 9;
+    s_valueB = 32'h8;
+    @(negedge clock);
+
+    // Start DMA
+    s_valueA = 4'b1011 << 9;
+    s_valueB = 32'h2;
+    @(negedge clock);
+
+    // CI off
+    s_ciN = 8'd0;
+    s_start = 1'b0;
+    s_valueA = 32'b0;
+    s_valueB = 32'b0;
+
+    // Wait for a request
+    if (~request) @(posedge request);
+    repeat (2) @(negedge clock);
+    granted = 1'b1;
+    @(negedge clock);
+    // Now the controller sends address and burst info
+    granted = 1'b0;
+    @(negedge clock);
+    // Now the burst transfer happens
+    repeat (2) @(negedge clock);
+    error_in = 1'b1;
+    @(negedge clock);
+    error_in = 1'b0;
+    repeat (3) @(negedge clock);
+
+
+
+    #50;
 
     $finish;
   end
