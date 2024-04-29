@@ -9,19 +9,19 @@ module dualPortSSRAM #(
     addressB,
     input wire [bitwidth-1 : 0] dataInA,
     dataInB,
-    output wire [bitwidth-1 : 0] dataOutA,
-    dataOutB
+    output reg [bitwidth-1 : 0] dataOutA,
+    output reg [bitwidth-1 : 0] dataOutB
 );
 
   reg [bitwidth-1 : 0] memoryContent[nrOfEntries];
 
-  assign dataOutA = memoryContent[addressA];
-  assign dataOutB = memoryContent[addressB];
-
   always @(posedge clock) begin
-    if (writeEnableA == 1'b1) memoryContent[addressA] = dataInA;
+    if (writeEnableA == 1'b1) memoryContent[addressA] <= dataInA;
+    if (writeEnableB == 1'b1) memoryContent[addressB] <= dataInB;
   end
   always @(negedge clock) begin
-    if (writeEnableB == 1'b1) memoryContent[addressB] = dataInB;
+    dataOutA <= memoryContent[addressA];
+    dataOutB <= memoryContent[addressB];
   end
 endmodule
+
