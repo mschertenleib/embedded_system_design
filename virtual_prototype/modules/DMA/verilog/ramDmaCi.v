@@ -61,6 +61,14 @@ module ramDmaCi #(
       .dataOutB()
   );
 
+
+  localparam [2:0] IDLE = 3'd0, REQUEST = 3'd1, START_READ = 3'd2, READING = 3'd3, ERROR = 3'd5;
+
+  reg [2:0] state = IDLE;
+  reg [9:0] block_count = 10'b0;
+  reg [7:0] burst_count = 8'b0;
+
+
   always @(posedge clock) begin
     if (read_enable) read_data_ready <= 1'b1;
     if (done) read_data_ready <= 1'b0;
@@ -74,6 +82,20 @@ module ramDmaCi #(
         default: ;
       endcase
     end
+    if (state == READING) begin
+      if (data_valid_in) begin
+        block_count <= block_count + 10'd1;
+        burst_count <= burst_count + 8'd1;
+        bus_start_address <= bus_start_address + 32'd4;
+        memory_start_address <= memory_start_address + 9'd4;
+      end
+    end else if (state == IDLE) begin
+      burst_count <= 8'd0;
+      block_count <= 10'd0;
+    end else burst_count <= 8'd0;
+    status_register[0] <= (state == IDLE) ? 1'b0 : 1'b1;
+    status_register[1] <= (state == ERROR) ? 1'b1 : (state == REQUEST) ? 1'b0 : status_register[1];
+    if (state != IDLE) control_register <= 1'b0;
   end
 
   assign done = read_data_ready | (active & ~read_enable);
@@ -85,14 +107,6 @@ module ramDmaCi #(
       (valueA[12:10] == 3'b100) ? burst_size :
       (valueA[12:10] == 3'b101) ? status_register : 32'b0)
     : read_data_ready ? data_out_A : 32'b0;
-
-
-
-  localparam [2:0] IDLE = 3'd0, REQUEST = 3'd1, START_READ = 3'd2, READING = 3'd3, ERROR = 3'd5;
-
-  reg [2:0] state = IDLE;
-  reg [9:0] block_count = 10'b0;
-  reg [7:0] burst_count = 8'b0;
 
   always @(posedge clock) begin
     case (state)
@@ -122,23 +136,6 @@ module ramDmaCi #(
   assign end_transaction_out = (state == ERROR) ? 1'b1 : 1'b0;
   assign data_valid_out = 1'b0;
 
-
-  always @(posedge clock) begin
-    if (state == READING) begin
-      if (data_valid_in) begin
-        block_count <= block_count + 10'd1;
-        burst_count <= burst_count + 8'd1;
-        bus_start_address <= bus_start_address + 32'd4;
-        memory_start_address <= memory_start_address + 9'd4;
-      end
-    end else if (state == IDLE) begin
-      burst_count <= 8'd0;
-      block_count <= 10'd0;
-    end else burst_count <= 8'd0;
-    status_register[0] <= (state == IDLE) ? 1'b0 : 1'b1;
-    status_register[1] <= (state == ERROR) ? 1'b1 : (state == REQUEST) ? 1'b0 : status_register[1];
-    if (state != IDLE) control_register <= 1'b0;
-  end
 
 endmodule
 
