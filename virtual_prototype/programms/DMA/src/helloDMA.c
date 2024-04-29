@@ -2,8 +2,9 @@
 #include <stdio.h>
 #include <swap.h>
 #include <vga.h>
+#include <stdalign.h>
 
-#define TEST2
+#define CAMERA
 #define SRAM_ADDR 0x0000000
 #define SCREEN_ADDR 0x50000020
 
@@ -21,6 +22,21 @@ enum dma_status {
   DMA_ERROR = 2,
   DMA_FAIL = 3
 };
+
+inline static uint32_t rgb565Grayscale(uint32_t pixels_1_0, uint32_t pixels_3_2) {
+  uint32_t result;
+  asm volatile("l.nios_rrr %[out1],%[in1],%[in2],0xD"
+               : [out1] "=r"(result)
+               : [in1] "r"(pixels_1_0), [in2] "r"(pixels_3_2));
+  return result;
+}
+
+inline static void rgb2gray_parallel(volatile uint8_t *result, const volatile uint16_t *px) {
+  uint32_t* imgptr = (uint32_t*) px;
+  uint32_t gray = rgb565Grayscale(imgptr[1], imgptr[0]);
+  uint32_t* ptrres = (uint32_t*)result;
+  *ptrres = gray;
+}
 
 static void writeDMA(uint16_t addr,uint32_t data) {
   uint32_t regA,regB,result;
@@ -79,14 +95,14 @@ int main () {
   camParameters camParams;
   vga_clear();
 
-  #ifdef TEST1
+  #ifdef READ_WRITE_TEST
     for (uint16_t i = 0; i < 512; ++i) {
       printf("Writing %d at %X\n", i, i);
       writeDMA(i, i);
       const uint32_t res = readDMA(i);
       printf("Read %d at %X\n", res, i);
     }
-  #elif defined(TEST2)
+  #elif defined(DMA_WRITE_SCREEN)
     static enum dma_status status;
 
     while (1){
@@ -126,7 +142,63 @@ int main () {
       } while (status != DMA_READY);
     }
     
+  #elif defined(DMASTATE)
+    static enum dma_status status;
+    do
+    {
+      status = dma_status();
+      switch (status)
+      {
+      case DMA_READY:
+        printf("DMA ready\n");
+        break;
+      case DMA_BUSY:
+        printf("DMA busy\n");
+        break;
+      case DMA_ERROR:
+        printf("DMA error\n");
+        break;
+      case DMA_FAIL:  
+        printf("DMA fail\n");
+        break;
+      default:
+        break;
+      }
+    } while (status != DMA_ERROR);
     
+  #elif defined(CAMERA)
 
+    alignas(uint32_t) volatile uint16_t rgb565[640 * 480];
+    alignas(uint32_t) volatile uint8_t grayscale[640 * 480];
+    printf("Initialising camera (this takes up to 3 seconds)!\n");
+    camParams = initOv7670(VGA);
+    printf("Done!\n");
+    printf("NrOfPixels : %lu\n", camParams.nrOfPixelsPerLine);
+    result = (camParams.nrOfPixelsPerLine <= 320)
+                ? camParams.nrOfPixelsPerLine | 0x80000000
+                : camParams.nrOfPixelsPerLine;
+    vga[0] = swap_u32(result);
+    printf("NrOfLines  : %lu\n", camParams.nrOfLinesPerImage);
+    result = (camParams.nrOfLinesPerImage <= 240)
+                ? camParams.nrOfLinesPerImage | 0x80000000
+                : camParams.nrOfLinesPerImage;
+    vga[1] = swap_u32(result);
+    printf("PCLK (kHz) : %lu\n", camParams.pixelClockInkHz);
+    printf("FPS        : %lu\n", camParams.framesPerSecond);
+    uint32_t *rgb = (uint32_t *)&rgb565[0];
+    uint32_t grayPixels;
+    vga[2] = swap_u32(2);
+    vga[3] = swap_u32((uint32_t)&grayscale[0]);
+
+    while (1) {
+      uint32_t *gray = (uint32_t *)&grayscale[0];
+      takeSingleImageBlocking((uint32_t)&rgb565[0]);
+      //printf("Image taken\n");
+      for (int px = 0;
+          px < camParams.nrOfLinesPerImage * camParams.nrOfPixelsPerLine;
+          px += 4) {
+        rgb2gray_parallel(&grayscale[px], &rgb565[px]);
+      }
+    }
   #endif
 }
