@@ -1,0 +1,64 @@
+[*]
+[*] GTKWave Analyzer v3.4.0 (w)1999-2022 BSI
+[*] Mon Apr 29 08:18:25 2024
+[*]
+[dumpfile] "/home/mathieu/embedded_system_design/embedded_system_design/virtual_prototype/modules/DMA/verilog/dma_signals.vcd"
+[dumpfile_mtime] "Mon Apr 29 08:13:26 2024"
+[dumpfile_size] 4706
+[savefile] "/home/mathieu/embedded_system_design/embedded_system_design/virtual_prototype/modules/DMA/verilog/gtkwave_signals.gtkw"
+[timestart] 0
+[size] 2550 1350
+[pos] -1281 -1
+*-5.000000 61 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] ramDmaCi_tb.
+[sst_width] 297
+[signals_width] 230
+[sst_expanded] 1
+[sst_vpaned_height] 420
+@28
+ramDmaCi_tb.DUT.clock
+ramDmaCi_tb.DUT.start
+@22
+ramDmaCi_tb.DUT.valueA[31:0]
+ramDmaCi_tb.DUT.valueB[31:0]
+@28
+ramDmaCi_tb.DUT.done
+@22
+ramDmaCi_tb.DUT.result[31:0]
+ramDmaCi_tb.DUT.address_A[8:0]
+ramDmaCi_tb.DUT.data_out_A[31:0]
+ramDmaCi_tb.DUT.memory_start_address[8:0]
+ramDmaCi_tb.DUT.bus_start_address[31:0]
+ramDmaCi_tb.DUT.block_size[9:0]
+ramDmaCi_tb.DUT.burst_size[7:0]
+@28
+ramDmaCi_tb.DUT.status_register[1:0]
+ramDmaCi_tb.DUT.control_register[1:0]
+@22
+ramDmaCi_tb.DUT.burst_count[7:0]
+ramDmaCi_tb.DUT.block_count[9:0]
+@28
+ramDmaCi_tb.DUT.state[2:0]
+ramDmaCi_tb.DUT.request
+ramDmaCi_tb.DUT.granted
+@22
+ramDmaCi_tb.DUT.address_data_in[31:0]
+@28
+ramDmaCi_tb.DUT.data_valid_in
+ramDmaCi_tb.DUT.end_transaction_in
+ramDmaCi_tb.DUT.busy_in
+ramDmaCi_tb.DUT.error_in
+@22
+ramDmaCi_tb.DUT.address_data_out[31:0]
+@23
+ramDmaCi_tb.DUT.burst_size_out[7:0]
+@28
+ramDmaCi_tb.DUT.data_valid_out
+@22
+ramDmaCi_tb.DUT.byte_enables_out[3:0]
+@28
+ramDmaCi_tb.DUT.begin_transaction_out
+ramDmaCi_tb.DUT.end_transaction_out
+ramDmaCi_tb.DUT.read_n_write_out
+[pattern_trace] 1
+[pattern_trace] 0

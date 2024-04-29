@@ -70,7 +70,7 @@ module ramDmaCi #(
         3'b010:  memory_start_address <= valueB[8:0];
         3'b011:  block_size <= valueB[9:0];
         3'b100:  burst_size <= valueB[7:0];
-        3'b101:  control_register <= valueB[1:0];
+        3'b101:  if (state == IDLE) control_register <= valueB[1:0];
         default: ;
       endcase
     end
@@ -88,7 +88,7 @@ module ramDmaCi #(
 
 
 
-  localparam [2:0] IDLE = 3'd0, REQUEST = 3'd1, START_READ = 3'd2, READING = 3'd3, ERROR = 3'd4;
+  localparam [2:0] IDLE = 3'd0, REQUEST = 3'd1, START_READ = 3'd2, READING = 3'd3, ERROR = 3'd5;
 
   reg [2:0] state = IDLE;
   reg [9:0] block_count = 10'b0;
@@ -96,12 +96,12 @@ module ramDmaCi #(
 
   always @(posedge clock) begin
     case (state)
-      IDLE: state <= control_register[0] ? REQUEST : state;
+      IDLE: state <= (control_register[0] & (block_size != 0)) ? REQUEST : state;
       REQUEST: state <= granted ? START_READ : state;
       START_READ: state <= READING;
       READING: begin
         if (error_in) state <= ERROR;
-        else if (burst_count == burst_size) begin  // End of burst
+        else if ((burst_count == burst_size + 8'd1) & end_transaction_in) begin  // End of burst
           if (block_count == block_size) state <= IDLE;  // End of transfer
           else state <= REQUEST;  // Next burst
         end
@@ -119,20 +119,25 @@ module ramDmaCi #(
   assign burst_size_out = (state == START_READ) ? burst_size : 8'b0;
   assign read_n_write_out = (state == START_READ) ? 1'b1 : 1'b0;
   assign begin_transaction_out = (state == START_READ) ? 1'b1 : 1'b0;
-  assign end_transaction_out = 1'b0;
+  assign end_transaction_out = (state == ERROR) ? 1'b1 : 1'b0;
   assign data_valid_out = 1'b0;
 
 
   always @(posedge clock) begin
-    block_count <= (state == IDLE) ? 10'd0 : (state == READING) ? block_count + 10'd1 : block_count;
-    burst_count <= (state == READING) ? burst_count + 8'd1 : 8'd0;
     if (state == READING) begin
-      bus_start_address <= bus_start_address + 32'd1;
-      memory_start_address <= memory_start_address + 9'd1;
-    end
+      if (data_valid_in) begin
+        block_count <= block_count + 10'd1;
+        burst_count <= burst_count + 8'd1;
+        bus_start_address <= bus_start_address + 32'd4;
+        memory_start_address <= memory_start_address + 9'd4;
+      end
+    end else if (state == IDLE) begin
+      burst_count <= 8'd0;
+      block_count <= 10'd0;
+    end else burst_count <= 8'd0;
     status_register[0] <= (state == IDLE) ? 1'b0 : 1'b1;
     status_register[1] <= (state == ERROR) ? 1'b1 : (state == REQUEST) ? 1'b0 : status_register[1];
-    control_register   <= 1'b0;
+    if (state != IDLE) control_register <= 1'b0;
   end
 
 endmodule

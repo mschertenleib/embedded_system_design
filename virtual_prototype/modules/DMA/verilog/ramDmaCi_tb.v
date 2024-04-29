@@ -167,8 +167,75 @@ module ramDmaCi_tb;
     s_valueA = 4'b0111 << 9;
     s_valueB = 32'h20;
     @(negedge clock);
-    // Burst size = 8
+    // Burst size = 7 (= 8 words)
     s_valueA = 4'b1001 << 9;
+    s_valueB = 32'h7;
+    @(negedge clock);
+
+    // Start DMA
+    s_valueA = 4'b1011 << 9;
+    s_valueB = 32'h1;
+    @(negedge clock);
+
+    // CI off
+    s_ciN = 8'd0;
+    s_start = 1'b0;
+    s_valueA = 32'b0;
+    s_valueB = 32'b0;
+
+    // ******* First burst *******
+    // Wait for a request
+    if (~request) @(posedge request);
+    repeat (2) @(negedge clock);
+    granted = 1'b1;
+    @(negedge clock);
+    // Now the controller sends address and burst info
+    granted = 1'b0;
+    @(negedge clock);
+    // Now the burst transfer happens
+    data_valid_in = 1'b1;
+    repeat (1) @(negedge clock);
+    data_valid_in = 1'b0;
+    repeat (1) @(negedge clock);
+    data_valid_in = 1'b1;
+    repeat (4) @(negedge clock);
+    data_valid_in = 1'b0;
+    repeat (2) @(negedge clock);
+    data_valid_in = 1'b1;
+    repeat (3) @(negedge clock);
+    data_valid_in = 1'b0;
+    end_transaction_in = 1'b1;
+    @(negedge clock);
+    end_transaction_in = 1'b0;
+
+    // ******* Other 3 bursts *******
+    repeat (3) begin
+      // Wait for a request
+      if (~request) @(posedge request);
+      repeat (2) @(negedge clock);
+      granted = 1'b1;
+      @(negedge clock);
+      // Now the controller sends address and burst info
+      granted = 1'b0;
+      @(negedge clock);
+      // Now the burst transfer happens
+      data_valid_in = 1'b1;
+      repeat (8) @(negedge clock);
+      data_valid_in = 1'b0;
+      end_transaction_in = 1'b1;
+      @(negedge clock);
+      end_transaction_in = 1'b0;
+    end
+
+    // At this point the first block transfer should have succeeded
+
+
+    // ******* Test transfer error *******
+
+    // Set block size = 8, so a single transaction is necessary
+    s_ciN = 8'd14;
+    s_start = 1'b1;
+    s_valueA = 4'b0111 << 9;
     s_valueB = 32'h8;
     @(negedge clock);
 
@@ -177,12 +244,31 @@ module ramDmaCi_tb;
     s_valueB = 32'h1;
     @(negedge clock);
 
+    // CI off
     s_ciN = 8'd0;
     s_start = 1'b0;
     s_valueA = 32'b0;
     s_valueB = 32'b0;
+
+    // Wait for a request
+    if (~request) @(posedge request);
+    repeat (2) @(negedge clock);
+    granted = 1'b1;
     @(negedge clock);
-    #120;
+    // Now the controller sends address and burst info
+    granted = 1'b0;
+    @(negedge clock);
+    // Now the burst transfer happens
+    data_valid_in = 1'b1;
+    repeat (3) @(negedge clock);
+    data_valid_in = 1'b0;
+    error_in = 1'b1;
+    @(negedge clock);
+    error_in = 1'b0;
+    @(negedge clock);
+
+
+    #20;
 
     $finish;
   end
