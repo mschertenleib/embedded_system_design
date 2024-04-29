@@ -97,18 +97,14 @@ module ramDmaCi_tb;
     $display("Write/read address 0");
     test(.start(1'b1), .ciN(8'd14), .valA(32'h200), .valB(32'h42), .expDone(1'h1), .expRes(32'h0));
     @(negedge clock);
-    test(.start(1'b1), .ciN(8'd14), .valA(32'h000), .valB(32'h0), .expDone(1'h0), .expRes(32'h0));
-    @(negedge clock);
-    test(.start(1'b0), .ciN(8'd0), .valA(32'h000), .valB(32'h0), .expDone(1'b1), .expRes(32'h42));
+    test(.start(1'b1), .ciN(8'd14), .valA(32'h000), .valB(32'h0), .expDone(1'h1), .expRes(32'h42));
     @(negedge clock);
 
     // Write then read at a random address
     $display("Write/read address 0x37");
     test(.start(1'b1), .ciN(8'd14), .valA(32'h237), .valB(32'h57), .expDone(1'b1), .expRes(32'h0));
     @(negedge clock);
-    test(.start(1'b1), .ciN(8'd14), .valA(32'h037), .valB(32'h0), .expDone(1'b0), .expRes(32'h0));
-    @(negedge clock);
-    test(.start(1'b0), .ciN(8'd0), .valA(32'h037), .valB(32'h0), .expDone(1'b1), .expRes(32'h57));
+    test(.start(1'b1), .ciN(8'd14), .valA(32'h037), .valB(32'h0), .expDone(1'b1), .expRes(32'h57));
     @(negedge clock);
 
     // Test bus start address
@@ -193,56 +189,68 @@ module ramDmaCi_tb;
     // ******* First burst *******
     // Wait for a request
     if (~request) @(posedge request);
-    repeat (2) @(negedge clock);
+    repeat (2) @(posedge clock);
+    #1;
     granted = 1'b1;
-    @(negedge clock);
+    @(posedge clock);
+    #1;
     // Now the controller sends address and burst info
     granted = 1'b0;
-    @(negedge clock);
+    @(posedge clock);
+    #1;
     // Now the burst transfer happens
-    data_valid_in = 1'b1;
-    repeat (1) begin
-      address_data_in = address_data_in + 1;
-      @(negedge clock);
-    end
+    data_valid_in   = 1'b1;
+    address_data_in = address_data_in + 1;
+    @(posedge clock);
+    #1;
     data_valid_in = 1'b0;
-    repeat (1) @(negedge clock);
+    @(posedge clock);
+    #1;
     data_valid_in = 1'b1;
     repeat (4) begin
       address_data_in = address_data_in + 1;
-      @(negedge clock);
+      @(posedge clock);
+      #1;
     end
     data_valid_in = 1'b0;
-    repeat (2) @(negedge clock);
+    repeat (2) @(posedge clock);
+    #1;
     data_valid_in = 1'b1;
     repeat (3) begin
       address_data_in = address_data_in + 1;
-      @(negedge clock);
+      @(posedge clock);
+      #1;
     end
     data_valid_in = 1'b0;
     end_transaction_in = 1'b1;
-    @(negedge clock);
+    @(posedge clock);
+    #1;
     end_transaction_in = 1'b0;
 
     // ******* Other 3 bursts *******
     repeat (3) begin
       // Wait for a request
       if (~request) @(posedge request);
-      repeat (2) @(negedge clock);
+      repeat (2) @(posedge clock);
+      #1;
       granted = 1'b1;
-      @(negedge clock);
+      @(posedge clock);
+      #1;
       // Now the controller sends address and burst info
       granted = 1'b0;
-      @(negedge clock);
+      @(posedge clock);
+      #1;
       // Now the burst transfer happens
       data_valid_in = 1'b1;
       repeat (8) begin
         address_data_in = address_data_in + 1;
-        @(negedge clock);
+        @(posedge clock);
+        #1;
       end
       data_valid_in = 1'b0;
       end_transaction_in = 1'b1;
-      @(negedge clock);
+      @(posedge clock);
+      #1;
       end_transaction_in = 1'b0;
     end
 
@@ -272,23 +280,29 @@ module ramDmaCi_tb;
 
     // Wait for a request
     if (~request) @(posedge request);
-    repeat (2) @(negedge clock);
+    repeat (2) @(posedge clock);
+    #1;
     granted = 1'b1;
-    @(negedge clock);
+    @(posedge clock);
+    #1;
     // Now the controller sends address and burst info
     granted = 1'b0;
-    @(negedge clock);
+    @(posedge clock);
+    #1;
     // Now the burst transfer happens
     data_valid_in = 1'b1;
     repeat (3) begin
       address_data_in = address_data_in + 1;
-      @(negedge clock);
+      @(posedge clock);
+      #1;
     end
     data_valid_in = 1'b0;
     error_in = 1'b1;
-    @(negedge clock);
+    @(posedge clock);
+    #1;
     error_in = 1'b0;
-    repeat (3) @(negedge clock);
+    repeat (3) @(posedge clock);
+    #1;
 
 
 
@@ -343,19 +357,25 @@ module ramDmaCi_tb;
     // ******* First burst *******
     // Wait for a request
     if (~request) @(posedge request);
-    repeat (2) @(negedge clock);
+    repeat (2) @(posedge clock);
+    #1;
     granted = 1'b1;
-    @(negedge clock);
+    @(posedge clock);
+    #1;
     // Now the controller sends address and burst info
     granted = 1'b0;
-    @(negedge clock);
+    @(posedge clock);
+    #1;
     // Now the burst transfer happens
     busy_in = 1'b0;
-    repeat (1) @(negedge clock);
+    repeat (1) @(posedge clock);
+    #1;
     busy_in = 1'b1;
-    repeat (2) @(negedge clock);
+    repeat (2) @(posedge clock);
+    #1;
     busy_in = 1'b0;
-    repeat (3) @(negedge clock);
+    repeat (3) @(posedge clock);
+    #1;
 
     // ******* Other 3 bursts *******
     repeat (3) begin

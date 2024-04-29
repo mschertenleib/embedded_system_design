@@ -45,7 +45,6 @@ module ramDmaCi #(
   wire write_enable_B = ((state == READING) & data_valid_in) ? 1'b1 : 1'b0;
   wire [31:0] data_in_B = ((state == READING) & data_valid_in) ? address_data_in : 32'b0;
 
-  reg data_valid_out_A = 1'b0;
   reg data_valid_out_B = 1'b0;
 
   reg [31:0] data_out_B_reg;
@@ -118,9 +117,6 @@ module ramDmaCi #(
   // ******* Other flip-flop updates *******
 
   always @(posedge clock) begin
-    if (read_enable_A) data_valid_out_A <= 1'b1;
-    if (done) data_valid_out_A <= 1'b0;
-
     // Config registers update
     if (active & valueA_valid & valueA[9] & (state == IDLE)) begin
       case (valueA[12:10])
@@ -133,7 +129,9 @@ module ramDmaCi #(
       endcase
     end
 
-    if (state == READING) begin
+    if (state == REQUEST_WRITE) begin
+      data_valid_out_B <= 1'b0;
+    end else if (state == READING) begin
       if (data_valid_in) begin
         block_count <= block_count + 10'd1;
         burst_count <= burst_count + 8'd1;
@@ -166,15 +164,16 @@ module ramDmaCi #(
     if (state != IDLE) control_register <= 2'b00;
   end
 
-  assign done = data_valid_out_A | (active & ~read_enable_A);
+  assign done = active;
 
   assign result = (active & valueA_valid & ~valueA[9]) ?
-      ((valueA[12:10] == 3'b001) ? bus_start_address :
+      ((valueA[12:10] == 3'b000) ? data_out_A :
+      (valueA[12:10] == 3'b001) ? bus_start_address :
       (valueA[12:10] == 3'b010) ? memory_start_address :
       (valueA[12:10] == 3'b011) ? block_size :
       (valueA[12:10] == 3'b100) ? burst_size :
       (valueA[12:10] == 3'b101) ? status_register : 32'b0)
-    : data_valid_out_A ? data_out_A : 32'b0;
+      : 32'b0;
 
 
   assign request = ((state == REQUEST_READ) | (state == REQUEST_WRITE)) ? 1'b1 : 1'b0;
