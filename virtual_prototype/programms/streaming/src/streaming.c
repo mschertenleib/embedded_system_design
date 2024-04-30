@@ -6,6 +6,15 @@
 // #define __RGB565__
 // #define UNMODIFIED // Like PW2
 
+static void waitDMA(void) {
+  uint32_t status;
+  do {
+    asm volatile("l.nios_rrr %[out1],%[in1],r0,20"
+                 : [out1] "=r"(status)
+                 : [in1] "r"(5 << 10));
+  } while (status & 1);
+}
+
 int main() {
 
   const uint8_t sevenSeg[10] = {0x3F, 0x06, 0x5B, 0x4F, 0x66,
@@ -93,12 +102,7 @@ int main() {
         "l.nios_rrr r0,%[in1],%[in2],20" ::[in1] "r"(statusControl | writeBit),
         [in2] "r"(1));
 
-    // Wait for transfer to finish
-    do {
-      asm volatile("l.nios_rrr %[out1],%[in1],r0,20"
-                   : [out1] "=r"(status)
-                   : [in1] "r"(statusControl));
-    } while (status & 1);
+    waitDMA();
 
     for (int i = 0; i < 600; ++i) {
 
@@ -148,11 +152,7 @@ int main() {
 
       if (i < 599) {
         // Wait for the other transfer to finish
-        do {
-          asm volatile("l.nios_rrr %[out1],%[in1],r0,20"
-                       : [out1] "=r"(status)
-                       : [in1] "r"(statusControl));
-        } while (status & 1);
+        waitDMA();
       }
 
       // Start a transfer to the grayscale screen buffer
@@ -171,11 +171,7 @@ int main() {
       gray += 128;
 
       // Wait for the transfer to finish
-      do {
-        asm volatile("l.nios_rrr %[out1],%[in1],r0,20"
-                     : [out1] "=r"(status)
-                     : [in1] "r"(statusControl));
-      } while (status & 1);
+      waitDMA();
     }
 
 #endif
