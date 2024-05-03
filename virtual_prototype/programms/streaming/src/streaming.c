@@ -3,8 +3,9 @@
 #include <swap.h>
 #include <vga.h>
 
-// #define __RGB565__
-// #define UNMODIFIED // Like PW2
+#define DMA // Do transfers with DMA
+// #define STREAMING  // Streaming
+#define __RGB565__
 
 static void waitDMA(void) {
   uint32_t status;
@@ -43,15 +44,24 @@ int main() {
   printf("PCLK (kHz) : %d\n", camParams.pixelClockInkHz);
   printf("FPS        : %d\n", camParams.framesPerSecond);
   uint32_t grayPixels;
-#ifdef __RGB565__
+#if defined(STREAMING) && defined(__RGB565__)
   vga[2] = swap_u32(1);
   vga[3] = swap_u32((uint32_t)&rgb565[0]);
   enableContinues((uint32_t)&rgb565[0]);
 #else
   vga[2] = swap_u32(2);
   vga[3] = swap_u32((uint32_t)&grayscale[0]);
+#if defined(STREAMING)
   enableContinues((uint32_t)&grayscale[0]);
 #endif
+#endif
+
+#if defined(STREAMING)
+
+  while (1) {
+  }
+
+#else
 
   const uint32_t writeBit = 1 << 9;
   const uint32_t busStartAddress = 1 << 10;
@@ -65,22 +75,7 @@ int main() {
     takeSingleImageBlocking((uint32_t)&rgb565[0]);
     asm volatile("l.nios_rrr r0,r0,%[in2],0xC" ::[in2] "r"(7));
 
-#ifdef UNMODIFIED
-    uint32_t *rgb = (uint32_t *)&rgb565[0];
-    uint32_t *gray = (uint32_t *)&grayscale[0];
-    for (int pixel = 0;
-         pixel <
-         ((camParams.nrOfLinesPerImage * camParams.nrOfPixelsPerLine) >> 1);
-         pixel += 2) {
-      uint32_t pixel1 = rgb[pixel];
-      uint32_t pixel2 = rgb[pixel + 1];
-      asm volatile("l.nios_rrr %[out1],%[in1],%[in2],0xD"
-                   : [out1] "=r"(grayPixels)
-                   : [in1] "r"(pixel1), [in2] "r"(pixel2));
-      gray[0] = grayPixels;
-      gray++;
-    }
-#else
+#ifdef DMA
 
     uint32_t *rgb = (uint32_t *)&rgb565[0];
     uint32_t *gray = (uint32_t *)&grayscale[0];
@@ -174,6 +169,23 @@ int main() {
       waitDMA();
     }
 
+#else
+
+    uint32_t *rgb = (uint32_t *)&rgb565[0];
+    uint32_t *gray = (uint32_t *)&grayscale[0];
+    for (int pixel = 0;
+         pixel <
+         ((camParams.nrOfLinesPerImage * camParams.nrOfPixelsPerLine) >> 1);
+         pixel += 2) {
+      uint32_t pixel1 = rgb[pixel];
+      uint32_t pixel2 = rgb[pixel + 1];
+      asm volatile("l.nios_rrr %[out1],%[in1],%[in2],0xD"
+                   : [out1] "=r"(grayPixels)
+                   : [in1] "r"(pixel1), [in2] "r"(pixel2));
+      gray[0] = grayPixels;
+      gray++;
+    }
+
 #endif
 
     asm volatile("l.nios_rrr %[out1],r0,%[in2],0xC"
@@ -187,4 +199,6 @@ int main() {
                  : [in1] "r"(2), [in2] "r"(1 << 10));
     printf("nrOfCycles: %d %d %d\n", cycles, stall, idle);
   }
+
+#endif
 }
