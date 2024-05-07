@@ -87,11 +87,11 @@ static void dma_start_trans(){
   asm volatile("l.nios_rrr r0,%[in1],%[in2],20" ::[in1] "r"(STATUS_CONTROL | WRITE_BIT),[in2] "r"(1));
 }
 
-static void grayscale_block_convert(uint8_t *grayBlockPtr,uint16_t dmaAddr){
+static void grayscale_block_convert(uint8_t *grayBlockPtr,uint16_t dmaAddr,uint32_t blocksize){
   uint16_t imgBlockBuffer[256] = {0};
   uint32_t res;
   uint16_t px[4];
-  for(uint16_t pxidx = 0; pxidx < 256; pxidx += 4){
+  for(uint16_t pxidx = 0; pxidx < blocksize; pxidx += 4){
     asm volatile("l.nios_rrr %[out1],%[in1],r0,20" :[out1]"=r"(res):[in1] "r"(dmaAddr+pxidx+0));
     px[0] = (uint16_t)res;
     asm volatile("l.nios_rrr %[out1],%[in1],r0,20" :[out1]"=r"(res):[in1] "r"(dmaAddr+pxidx+1));
@@ -117,22 +117,22 @@ static void wait_dma(){
   }while(status != DMA_READY);
 }
 
-static void grayscale_dma(uint8_t *grayBuffer,uint32_t *camAddr){
+static void grayscale_dma(uint8_t *grayBuffer,uint32_t *camAddr,uint32_t blocksize){
   dma_conf_trans(camAddr,0,256,256);
   dma_start_trans();
   for(int block = 0; block < 600; block+=2){
-    dma_wait();                                             //wait for the first block transfer to finish
-    dma_conf_trans(camAddr+block*256,256,256,256);          //configure the next transfer to second block of CiRam
+    wait_dma();                                             //wait for the first block transfer to finish
+    dma_conf_trans(camAddr+block*blocksize,256,blocksize,blocksize);          //configure the next transfer to second block of CiRam
     dma_start_trans();                                      //start the transfer from cam to CiRam
-    grayscale_block_convert(grayBuffer+block*256,0);        //convert the first block of CiRam to grayscale
+    grayscale_block_convert(grayBuffer+block*blocksize,0,blocksize);        //convert the first block of CiRam to grayscale
 
-    dma_wait();                                             //wait for the second block transfer to finish                         
-    dma_conf_trans(camAddr+(block+1)*256,0,256,256);        //configure the next transfer to first block of CiRam
+    wait_dma();                                             //wait for the second block transfer to finish                         
+    dma_conf_trans(camAddr+(block+1)*blocksize,0,blocksize,blocksize);        //configure the next transfer to first block of CiRam
     dma_start_trans();                                      //start the transfer from cam to CiRam
-    grayscale_block_convert(grayBuffer+(block+1)*256,256);  //convert the second block of CiRam to grayscale
+    grayscale_block_convert(grayBuffer+(block+1)*blocksize,256,blocksize);  //convert the second block of CiRam to grayscale
   }
   wait_dma();
-  grayscale_block_convert(grayBuffer+600*256,0);
+  grayscale_block_convert(grayBuffer+600*blocksize,0,blocksize);
 }
 
 int main() {
@@ -169,7 +169,7 @@ int main() {
     control_counters(RESET_CYCLES | RESET_BUS_IDLE | RESET_STALL | RESET_CYCLES_2);
     control_counters(ENABLE_CYCLES | ENABLE_STALL | ENABLE_BUS_IDLE | ENABLE_CYCLES_2);
     //start of conversion
-    grayscale_dma(&grayscale[0],vga);
+    grayscale_dma(&grayscale[0],vga,256);
     
     control_counters(DISABLE_CYCLES | DISABLE_BUS_IDLE | DISABLE_STALL | DISABLE_CYCLES_2);
     stall = read_counter(COUNTER_STALL);
