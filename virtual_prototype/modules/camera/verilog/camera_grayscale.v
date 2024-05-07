@@ -177,9 +177,9 @@ module camera #(
     s_byte1Reg <= (s_pixelCountReg[1:0] == 2'b10 && hsync == 1'b1) ? camData : s_byte1Reg;
   end
 
-  //`define RGB565_GRAYSCALE
+  `define GRAYSCALE
 
-`ifdef RGB565_GRAYSCALE
+`ifdef GRAYSCALE
   // To the conversion from RGB565 to RGB565-grayscale
   wire [7:0] s_grayscale1, s_grayscale2;
   rgb565Grayscale cvtGrayscale1 (
@@ -206,7 +206,7 @@ module camera #(
       .clock1(pclk),
       .clock2(clock),
       .writeEnable(s_weLineBuffer),
-`ifdef RGB565_GRAYSCALE
+`ifdef GRAYSCALE
       .dataIn1(s_grayscalePixelWord),
 `else
       .dataIn1(s_pixelWord),
