@@ -5,10 +5,10 @@
 
 #define DMA       // Do transfers with DMA
 #define STREAMING // Streaming
-#define __RGB565__
+//    #define __RGB565__
 
 static void waitDMA(void) {
-  volatile uint32_t status;
+  uint32_t status;
   do {
     asm volatile("l.nios_rrr %[out1],%[in1],r0,20"
                  : [out1] "=r"(status)
@@ -191,6 +191,7 @@ int main() {
          pixel <
          ((camParams.nrOfLinesPerImage * camParams.nrOfPixelsPerLine) >> 1);
          pixel += 2) {
+      uint32_t pixel1 = rgb[pixel];
       uint32_t pixel2 = rgb[pixel + 1];
       asm volatile("l.nios_rrr %[out1],%[in1],%[in2],0xD"
                    : [out1] "=r"(grayPixels)

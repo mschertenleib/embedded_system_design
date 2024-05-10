@@ -165,6 +165,28 @@ module camera #(
    * Here the grabber is defined
    *
    */
+
+  //`define RGB565_GRAYSCALE
+  `define GRAYSCALE_U8
+
+`ifdef GRAYSCALE_U8
+  reg [7:0] s_byte7Reg, s_byte6Reg, s_byte5Reg, s_byte4Reg, s_byte3Reg, s_byte2Reg, s_byte1Reg;
+  reg [8:0] s_busSelectReg;
+  wire [31:0] s_busPixelWord;
+  wire [31:0] s_pixelWord2 = {s_byte5Reg, s_byte4Reg, s_byte7Reg, s_byte6Reg};
+  wire [31:0] s_pixelWord1 = {s_byte1Reg, camData, s_byte3Reg, s_byte2Reg};
+  wire s_weLineBuffer = (s_pixelCountReg[2:0] == 3'b111) ? hsync : 1'b0;
+
+  always @(posedge pclk) begin
+    s_byte7Reg <= (s_pixelCountReg[2:0] == 3'b000 && hsync == 1'b1) ? camData : s_byte7Reg;
+    s_byte6Reg <= (s_pixelCountReg[2:0] == 3'b001 && hsync == 1'b1) ? camData : s_byte6Reg;
+    s_byte5Reg <= (s_pixelCountReg[2:0] == 3'b010 && hsync == 1'b1) ? camData : s_byte5Reg;
+    s_byte4Reg <= (s_pixelCountReg[2:0] == 3'b011 && hsync == 1'b1) ? camData : s_byte4Reg;
+    s_byte3Reg <= (s_pixelCountReg[2:0] == 3'b100 && hsync == 1'b1) ? camData : s_byte3Reg;
+    s_byte2Reg <= (s_pixelCountReg[2:0] == 3'b101 && hsync == 1'b1) ? camData : s_byte2Reg;
+    s_byte1Reg <= (s_pixelCountReg[2:0] == 3'b110 && hsync == 1'b1) ? camData : s_byte1Reg;
+  end
+`else
   reg [7:0] s_byte3Reg, s_byte2Reg, s_byte1Reg;
   reg [8:0] s_busSelectReg;
   wire [31:0] s_busPixelWord;
@@ -176,11 +198,9 @@ module camera #(
     s_byte2Reg <= (s_pixelCountReg[1:0] == 2'b01 && hsync == 1'b1) ? camData : s_byte2Reg;
     s_byte1Reg <= (s_pixelCountReg[1:0] == 2'b10 && hsync == 1'b1) ? camData : s_byte1Reg;
   end
-
-  //`define RGB565_GRAYSCALE
+`endif
 
 `ifdef RGB565_GRAYSCALE
-  // To the conversion from RGB565 to RGB565-grayscale
   wire [7:0] s_grayscale1, s_grayscale2;
   rgb565Grayscale cvtGrayscale1 (
       .rgb565(s_pixelWord[15:0]),
@@ -198,15 +218,41 @@ module camera #(
     s_grayscale1[7:2],
     s_grayscale1[7:3]
   };
+`elsif GRAYSCALE_U8
+  wire [7:0] s_grayscale1, s_grayscale2, s_grayscale3, s_grayscale4;
+  rgb565Grayscale cvtGrayscale1 (
+      .rgb565(s_pixelWord1[15:0]),
+      .grayscale(s_grayscale1)
+  );
+  rgb565Grayscale cvtGrayscale2 (
+      .rgb565(s_pixelWord1[31:16]),
+      .grayscale(s_grayscale2)
+  );
+  rgb565Grayscale cvtGrayscale3 (
+      .rgb565(s_pixelWord2[15:0]),
+      .grayscale(s_grayscale3)
+  );
+  rgb565Grayscale cvtGrayscale4 (
+      .rgb565(s_pixelWord2[31:16]),
+      .grayscale(s_grayscale4)
+  );
+
+  wire [31:0] s_grayscalePixelWord = {s_grayscale1, s_grayscale2, s_grayscale3, s_grayscale4};
 `endif
 
   dualPortRam2k lineBuffer (
+`ifdef GRAYSCALE_U8
+      .address1(s_pixelCountReg[10:3]),
+`else
       .address1(s_pixelCountReg[10:2]),
+`endif
       .address2(s_busSelectReg),
       .clock1(pclk),
       .clock2(clock),
       .writeEnable(s_weLineBuffer),
 `ifdef RGB565_GRAYSCALE
+      .dataIn1(s_grayscalePixelWord),
+`elsif GRAYSCALE_U8
       .dataIn1(s_grayscalePixelWord),
 `else
       .dataIn1(s_pixelWord),
@@ -265,8 +311,13 @@ module camera #(
     s_burstCountReg        <= (s_stateMachineReg == INIT_BURST1) ? s_burstSizeNext - 8'd1 :
                                 (s_doWrite == 1'b1) ? s_burstCountReg - 9'd1 : s_burstCountReg;
     s_busSelectReg         <= (s_stateMachineReg == IDLE) ? 9'd0 : (s_doWrite == 1'b1) ? s_busSelectReg + 9'd1 : s_busSelectReg;
+`ifdef GRAYSCALE_U8
+    s_nrOfPixelsPerLineReg <= (s_newLine == 1'b1) ? s_pixelCountValueReg[10:3] : 
+                                (s_stateMachineReg == INIT_BURST1) ? s_nrOfPixelsPerLineReg - {1'b0,s_burstSizeNext} : s_nrOfPixelsPerLineReg;
+`else
     s_nrOfPixelsPerLineReg <= (s_newLine == 1'b1) ? s_pixelCountValueReg[10:2] : 
                                 (s_stateMachineReg == INIT_BURST1) ? s_nrOfPixelsPerLineReg - {1'b0,s_burstSizeNext} : s_nrOfPixelsPerLineReg;
+`endif
   end
 
   synchroFlop sns (
