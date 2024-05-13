@@ -17,7 +17,7 @@
 ../../../modules/i2c/verilog/i2cCustomInstr.v
 ../../../modules/profileCi/verilog/counter.v
 ../../../modules/profileCi/verilog/profileCi.v
-../../../modules/grayscale/verilog/rgb565GrayscaleIse.v
+../../../modules/grayscale/verilog/rgb565ISE.v
 ../../../modules/grayscale/verilog/rgb565Grayscale.v
 ../../../modules/ramDmaCi/verilog/dualPortSSram.v
 ../../../modules/ramDmaCi/verilog/ramDmaCi.v
