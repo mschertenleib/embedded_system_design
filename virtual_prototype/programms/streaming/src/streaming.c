@@ -5,7 +5,7 @@
 
 #define DMA       // Do transfers with DMA
 #define STREAMING // Streaming
-//    #define __RGB565__
+// #define __RGB565__
 
 static void waitDMA(void) {
   uint32_t status;
@@ -122,8 +122,6 @@ int main() {
 
       // Convert values in first buffer
       for (int j = 0; j < 128; j++) {
-        // asm volatile("l.nios_rrr r0,r0,%[in2],0xC" ::[in2] "r"(7));
-
         // Read 4 pixels from the buffer
         uint32_t pixels1;
         uint32_t pixels2;
@@ -146,17 +144,6 @@ int main() {
         asm volatile("l.nios_rrr r0,%[in1],%[in2],20" ::[in1] "r"(
                          writeBit | (ramAddressConvert + j)),
                      [in2] "r"(grayPixels));
-
-        /*asm volatile("l.nios_rrr %[out1],r0,%[in2],0xC"
-                     : [out1] "=r"(cycles)
-                     : [in2] "r"(1 << 8 | 7 << 4));
-        asm volatile("l.nios_rrr %[out1],%[in1],%[in2],0xC"
-                     : [out1] "=r"(stall)
-                     : [in1] "r"(1), [in2] "r"(1 << 9));
-        asm volatile("l.nios_rrr %[out1],%[in1],%[in2],0xC"
-                     : [out1] "=r"(idle)
-                     : [in1] "r"(2), [in2] "r"(1 << 10));
-        printf("inner: %d %d %d\n", cycles, stall, idle);*/
       }
 
       if (i < 599) {
