@@ -98,23 +98,34 @@ int main() {
       }
     }
 
+    const int max_pixel_delta = 1;
+
     // Convert binary gradients to optic flow
-    for (int base_pixel = camParams.nrOfPixelsPerLine;
-         base_pixel <
-         (camParams.nrOfLinesPerImage - 1) * camParams.nrOfPixelsPerLine;
+    for (int base_pixel = max_pixel_delta * camParams.nrOfPixelsPerLine;
+         base_pixel < (camParams.nrOfLinesPerImage - max_pixel_delta) *
+                          camParams.nrOfPixelsPerLine;
          base_pixel += camParams.nrOfPixelsPerLine) {
-      for (int j = 1; j < camParams.nrOfPixelsPerLine - 1; ++j) {
+      for (int j = max_pixel_delta;
+           j < camParams.nrOfPixelsPerLine - max_pixel_delta; ++j) {
 
         const int pixel_index = base_pixel + j;
         const int base_bin_index = pixel_index >> 5;
         const int bit_index = pixel_index & 31;
-        const uint8_t grad_x = (grad_bin_x[base_bin_index] >> bit_index) & 1;
-        const uint8_t grad_y = (grad_bin_y[base_bin_index] >> bit_index) & 1;
-        rgb_mat.data[pixel_index * 3 + 0] = grad_x << 7;
-        rgb_mat.data[pixel_index * 3 + 1] = grad_y << 7;
-        rgb_mat.data[pixel_index * 3 + 2] = 0;
+        const uint32_t left_and =
+            grad_bin_x[base_bin_index] & (prev_grad_bin_x[base_bin_index] >> 1);
+        const uint32_t right_and =
+            (grad_bin_x[base_bin_index] >> 1) & prev_grad_bin_x[base_bin_index];
+        const uint32_t left = left_and & ~right_and;
+        const uint32_t right = right_and & ~left_and;
+
+        rgb_mat.data[pixel_index * 3 + 0] = 0;
+        rgb_mat.data[pixel_index * 3 + 1] = ((left >> bit_index) & 1) << 7;
+        rgb_mat.data[pixel_index * 3 + 2] = ((right >> bit_index) & 1) << 7;
       }
     }
+
+    memcpy(prev_grad_bin_x, grad_bin_x, sizeof(grad_bin_x));
+    memcpy(prev_grad_bin_y, grad_bin_y, sizeof(grad_bin_y));
 
     // ------------ C code END ---------------------------
 

@@ -36,46 +36,48 @@ def as_color(
     corr_x: np.ndarray,
     corr_y: np.ndarray,
     scale: int,
-    mean_size: int,
-    arrow_scale: float,
+    draw_arrow:bool=False,
+    mean_size: int=11,
+    arrow_scale: float=50.0,
 ) -> np.ndarray:
     img = np.zeros((HEIGHT, WIDTH, 3), dtype=np.uint8)
     img[:, :, 1] = np.maximum(corr_x, 0) * scale
     img[:, :, 2] = np.maximum(-corr_x, 0) * scale
 
-    for y in range(mean_size // 2, HEIGHT, mean_size):
-        for x in range(mean_size // 2, WIDTH, mean_size):
-            cv2.arrowedLine(
-                img,
-                pt1=(x, y),
-                pt2=(
-                    x
-                    + int(
-                        np.mean(
-                            corr_x[
-                                y - mean_size // 2 : y + (mean_size - mean_size // 2),
-                                x - mean_size // 2 : x + (mean_size - mean_size // 2),
-                            ]
-                        )
-                        * scale
-                        / 255.0
-                        * arrow_scale
+    if draw_arrow:
+        for y in range(mean_size // 2, HEIGHT, mean_size):
+            for x in range(mean_size // 2, WIDTH, mean_size):
+                cv2.arrowedLine(
+                    img,
+                    pt1=(x, y),
+                    pt2=(
+                        x
+                        + int(
+                            np.mean(
+                                corr_x[
+                                    y - mean_size // 2 : y + (mean_size - mean_size // 2),
+                                    x - mean_size // 2 : x + (mean_size - mean_size // 2),
+                                ]
+                            )
+                            * scale
+                            / 255.0
+                            * arrow_scale
+                        ),
+                        y
+                        + int(
+                            np.mean(
+                                corr_y[
+                                    y - mean_size // 2 : y + (mean_size - mean_size // 2),
+                                    x - mean_size // 2 : x + (mean_size - mean_size // 2),
+                                ]
+                            )
+                            * scale
+                            / 255.0
+                            * arrow_scale
+                        ),
                     ),
-                    y
-                    + int(
-                        np.mean(
-                            corr_y[
-                                y - mean_size // 2 : y + (mean_size - mean_size // 2),
-                                x - mean_size // 2 : x + (mean_size - mean_size // 2),
-                            ]
-                        )
-                        * scale
-                        / 255.0
-                        * arrow_scale
-                    ),
-                ),
-                color=(255, 255, 255),
-            )
+                    color=(255, 255, 255),
+                )
 
     return img
 
@@ -154,10 +156,9 @@ def main():
         img[:HEIGHT, :WIDTH, :] = frame
         img[:HEIGHT, WIDTH:, 2] = grad_x
         img[:HEIGHT, WIDTH:, 1] = grad_y
-        img[HEIGHT:, :WIDTH, 2] = grad_x_bin * 255
-        img[HEIGHT:, :WIDTH, 1] = grad_y_bin * 255
+        img[HEIGHT:, :WIDTH, :] = as_color(corr_x, corr_y, scale=255)
         img[HEIGHT:, WIDTH:, :] = as_color(
-            total_corr_x, total_corr_y, scale=15, mean_size=20, arrow_scale=50.0
+            total_corr_x, total_corr_y, scale=15, draw_arrow=True, mean_size=20, arrow_scale=50.0
         )
 
         cv2.imshow("img", img)
