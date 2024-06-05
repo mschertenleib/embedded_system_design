@@ -1,5 +1,6 @@
 #include <ov7670.h>
 #include <stdio.h>
+#include <string.h>
 #include <swap.h>
 #include <vga.h>
 
@@ -84,12 +85,16 @@ int main() {
     }
 
     // Convert binary gradients to optic flow
-    for (int base_pixel = camParams.nrOfPixelsPerLine;
-         base_pixel < camParams.nrOfLinesPerImage - camParams.nrOfPixelsPerLine;
+    const int max_pixel_delta = 1;
+    for (int base_pixel = max_pixel_delta * camParams.nrOfPixelsPerLine;
+         base_pixel < camParams.nrOfLinesPerImage -
+                          max_pixel_delta * camParams.nrOfPixelsPerLine;
          base_pixel += camParams.nrOfPixelsPerLine) {
-      for (int j = 1; j < camParams.nrOfPixelsPerLine - 1; ++j) {
+      for (int j = max_pixel_delta;
+           j < camParams.nrOfPixelsPerLine - max_pixel_delta; ++j) {
 
         const int pixel_index = base_pixel + j;
+
         const int base_bin_index = pixel_index >> 5;
         const int bit_index = pixel_index & 31;
         const uint8_t grad_x = (grad_bin_x[base_bin_index] >> bit_index) & 1;
@@ -98,6 +103,9 @@ int main() {
             ((uint16_t)grad_x << 15) | ((uint16_t)grad_y << 4);
       }
     }
+
+    memcpy(prev_grad_bin_x, grad_bin_x, sizeof(grad_bin_x));
+    memcpy(prev_grad_bin_y, grad_bin_y, sizeof(grad_bin_y));
 
     // Read counters
     asm volatile("l.nios_rrr %[out1],r0,%[in2],0xC"
