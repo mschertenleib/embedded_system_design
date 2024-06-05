@@ -21,6 +21,8 @@
 ../../../modules/grayscale/verilog/rgb565Grayscale.v
 ../../../modules/ramDmaCi/verilog/dualPortSSram.v
 ../../../modules/ramDmaCi/verilog/ramDmaCi.v
+../../../modules/optic_flow/verilog/optic_flow_ci.v
+../../../modules/optic_flow/verilog/optic_flow_color_ci.v
 ../../../modules/camera/verilog/camera.v
 ../../../modules/camera/verilog/threshedge.v
 ../../../modules/delay/verilog/delayIse.v

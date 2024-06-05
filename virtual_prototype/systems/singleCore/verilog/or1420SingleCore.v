@@ -330,9 +330,13 @@ module or1420SingleCore ( input wire         clock12MHz,
 
   wire[31:0]  s_ramDmaResult;
   wire        s_ramDmaDone;
+  wire[31:0]  s_opticFlowResult;
+  wire        s_opticFlowDone;
+  wire[31:0]  s_opticFlowColorResult;
+  wire        s_opticFlowColorDone;
 
-  assign s_cpu1CiDone = s_hdmiDone | s_swapByteDone | s_flashDone | s_cpuFreqDone | s_i2cCiDone | s_delayCiDone | s_camCiDone | s_profileDone | s_rgb2grayDone | s_ramDmaDone;
-  assign s_cpu1CiResult = s_hdmiResult | s_swapByteResult | s_flashResult | s_cpuFreqResult | s_i2cCiResult | s_camCiResult | s_delayResult | s_profileResult | s_rgb2grayResult | s_ramDmaResult; 
+  assign s_cpu1CiDone = s_hdmiDone | s_swapByteDone | s_flashDone | s_cpuFreqDone | s_i2cCiDone | s_delayCiDone | s_camCiDone | s_profileDone | s_rgb2grayDone | s_ramDmaDone | s_opticFlowDone | s_opticFlowColorDone;
+  assign s_cpu1CiResult = s_hdmiResult | s_swapByteResult | s_flashResult | s_cpuFreqResult | s_i2cCiResult | s_camCiResult | s_delayResult | s_profileResult | s_rgb2grayResult | s_ramDmaResult | s_opticFlowResult | s_opticFlowColorResult; 
 
   or1420Top #( .NOP_INSTRUCTION(32'h1500FFFF)) cpu1
              (.cpuClock(s_systemClock),
@@ -504,6 +508,28 @@ module or1420SingleCore ( input wire         clock12MHz,
              .byteEnablesOut(s_ramDmaByteEnables),
              .burstSizeOut(s_ramDmaBurstSize),
              .addressDataOut(s_ramDmaAddressData));
+
+  /*
+   *
+   * Here we define the optic flow custom instructions
+   *
+   */
+  opticFlowCI #(.customInstructionId(8'h30)) opticFlow
+                (.start(s_cpu1CiStart),
+                .valueA(s_cpu1CiDataA),
+                .valueB(s_cpu1CiDataB),
+                .ciN(s_cpu1CiN),
+                .done(s_opticFlowDone),
+                .result(s_opticFlowResult));
+
+  opticFlowColorCI #(.customInstructionId(8'h31)) opticFlowColor
+                (.start(s_cpu1CiStart),
+                .valueA(s_cpu1CiDataA),
+                .valueB(s_cpu1CiDataB),
+                .ciN(s_cpu1CiN),
+                .done(s_opticFlowColorDone),
+                .result(s_opticFlowColorResult));
+
 
    /*
    *
