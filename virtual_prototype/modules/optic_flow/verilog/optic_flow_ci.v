@@ -34,7 +34,7 @@ module opticFlowCI #(
     wire[7:0] prev_row_down_y;
     genvar i;
     generate
-        for (i = 0; i < 8; i = i + 1) begin
+        for (i = 0; i < 8; i = i + 1) begin : dispatch_xy
             assign row_up_x[i] = row_up[2 * i];
             assign prev_row_up_x[i] = prev_row_up[2 * i];
             assign row_up_y[i] = row_up[2 * i + 1];
@@ -55,7 +55,7 @@ module opticFlowCI #(
     wire[7:0] down = down_and & ~up_and;
 
     generate
-        for (i = 0; i < 8; i = i + 1) begin
+        for (i = 0; i < 8; i = i + 1) begin : aggregate_result
             assign optic_flow_values[4 * i] = right[i];
             assign optic_flow_values[4 * i + 1] = left[i];
             assign optic_flow_values[4 * i + 2] = down[i];
