@@ -7,20 +7,15 @@
 #define GRAD_THRESHOLD 20
 
 int main() {
-  const uint8_t sevenSeg[10] = {0x3F, 0x06, 0x5B, 0x4F, 0x66,
-                                0x6D, 0x7D, 0x07, 0x7F, 0x6F};
-
   // Output image (color shows flow)
   volatile uint16_t rgb565[640 * 480];
   // Input image
   volatile uint8_t grayscale[640 * 480];
   // Binary gradients
-  volatile uint32_t grad_bin[640 / 32 * 480 * 2];
-  volatile uint32_t prev_grad_bin[640 / 32 * 480 * 2];
+  volatile uint32_t grad_buffers[2][640 / 32 * 480 * 2];
 
   volatile uint32_t result, cycles, stall, idle;
   volatile unsigned int *vga = (unsigned int *)0X50000020;
-  volatile unsigned int *gpio = (unsigned int *)0x40000000;
   camParameters camParams;
   vga_clear();
 
@@ -43,10 +38,15 @@ int main() {
   vga[2] = swap_u32(1);
   vga[3] = swap_u32((uint32_t)&rgb565[0]);
 
+  int current_buffer = 0;
+
   while (1) {
     takeSingleImageBlocking((uint32_t)&grayscale[0]);
     // Reset counters
     asm volatile("l.nios_rrr r0,r0,%[in2],0xC" ::[in2] "r"(7));
+
+    volatile uint32_t *grad_bin = grad_buffers[current_buffer];
+    volatile uint32_t *prev_grad_bin = grad_buffers[1 - current_buffer];
 
     // Convert grayscale to binary gradients
 
@@ -125,7 +125,7 @@ int main() {
       }
     }
 
-    memcpy(prev_grad_bin, grad_bin, sizeof(grad_bin));
+    current_buffer = 1 - current_buffer;
 
     // Read counters
     asm volatile("l.nios_rrr %[out1],r0,%[in2],0xC"
@@ -137,6 +137,6 @@ int main() {
     asm volatile("l.nios_rrr %[out1],%[in1],%[in2],0xC"
                  : [out1] "=r"(idle)
                  : [in1] "r"(2), [in2] "r"(1 << 10));
-    printf("nrOfCycles: %d %d %d\n", cycles, stall, idle);
+    printf("Cycles: %d Stall: %d Idle: %d\n", cycles, stall, idle);
   }
 }

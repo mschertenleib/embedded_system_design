@@ -30,8 +30,8 @@ int main() {
   cv::Mat grayscale_mat(cv::Size(WIDTH, HEIGHT), CV_8U);
   cv::Mat rgb_mat(cv::Size(WIDTH, HEIGHT), CV_8UC3);
 
-  std::uint32_t grad_bin[WIDTH / 32 * HEIGHT * 2]{};
-  std::uint32_t prev_grad_bin[WIDTH / 32 * HEIGHT * 2]{};
+  std::uint32_t grad_buffers[2][WIDTH / 32 * HEIGHT * 2]{};
+  int current_buffer = 0;
 
   while (cap.isOpened()) {
     const auto current_time = std::chrono::steady_clock::now();
@@ -58,6 +58,9 @@ int main() {
     // ------------ C code BEGIN -------------------------
 
     // Convert grayscale to binary gradients
+
+    uint32_t *grad_bin = grad_buffers[current_buffer];
+    uint32_t *prev_grad_bin = grad_buffers[1 - current_buffer];
 
     // Skip first and last rows and cols
     for (int pixel_index = camParams.nrOfPixelsPerLine;
@@ -134,7 +137,7 @@ int main() {
       }
     }
 
-    memcpy(prev_grad_bin, grad_bin, sizeof(grad_bin));
+    current_buffer = 1 - current_buffer;
 
     // ------------ C code END ---------------------------
 
