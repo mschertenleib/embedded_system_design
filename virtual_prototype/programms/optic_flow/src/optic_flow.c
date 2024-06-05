@@ -4,7 +4,7 @@
 #include <swap.h>
 #include <vga.h>
 
-#define GRAD_THRESHOLD 30
+#define GRAD_THRESHOLD 20
 
 int main() {
   const uint8_t sevenSeg[10] = {0x3F, 0x06, 0x5B, 0x4F, 0x66,
@@ -52,7 +52,8 @@ int main() {
 
     // Convert grayscale to binary gradients
     for (int base_pixel = camParams.nrOfPixelsPerLine;
-         base_pixel < camParams.nrOfLinesPerImage - camParams.nrOfPixelsPerLine;
+         base_pixel <
+         (camParams.nrOfLinesPerImage - 1) * camParams.nrOfPixelsPerLine;
          base_pixel += camParams.nrOfPixelsPerLine) {
       for (int j = 1; j < camParams.nrOfPixelsPerLine - 1; ++j) {
 
@@ -79,28 +80,45 @@ int main() {
 
         const int base_bin_index = pixel_index >> 5;
         const int bit_index = pixel_index & 31;
-        grad_bin_x[base_bin_index] |= dx << bit_index;
-        grad_bin_y[base_bin_index] |= dy << bit_index;
+        grad_bin_x[base_bin_index] =
+            (grad_bin_x[base_bin_index] & ~(1 << bit_index)) |
+            (dx << bit_index);
+        grad_bin_y[base_bin_index] =
+            (grad_bin_y[base_bin_index] & ~(1 << bit_index)) |
+            (dy << bit_index);
       }
     }
 
     // Convert binary gradients to optic flow
-    const int max_pixel_delta = 1;
-    for (int base_pixel = max_pixel_delta * camParams.nrOfPixelsPerLine;
-         base_pixel < camParams.nrOfLinesPerImage -
-                          max_pixel_delta * camParams.nrOfPixelsPerLine;
+    for (int base_pixel = 0; base_pixel < (camParams.nrOfLinesPerImage - 1) *
+                                              camParams.nrOfPixelsPerLine;
          base_pixel += camParams.nrOfPixelsPerLine) {
-      for (int j = max_pixel_delta;
-           j < camParams.nrOfPixelsPerLine - max_pixel_delta; ++j) {
+      for (int j_base = 0; j_base < camParams.nrOfPixelsPerLine; j_base += 32) {
 
-        const int pixel_index = base_pixel + j;
+        const int base_bin_index = (base_pixel + j_base) >> 5;
 
-        const int base_bin_index = pixel_index >> 5;
-        const int bit_index = pixel_index & 31;
-        const uint8_t grad_x = (grad_bin_x[base_bin_index] >> bit_index) & 1;
-        const uint8_t grad_y = (grad_bin_y[base_bin_index] >> bit_index) & 1;
-        rgb565[pixel_index] =
-            ((uint16_t)grad_x << 15) | ((uint16_t)grad_y << 4);
+        const uint32_t left_and =
+            grad_bin_x[base_bin_index] & (prev_grad_bin_x[base_bin_index] >> 1);
+        const uint32_t right_and =
+            (grad_bin_x[base_bin_index] >> 1) & prev_grad_bin_x[base_bin_index];
+        const uint32_t left = left_and & ~right_and;
+        const uint32_t right = right_and & ~left_and;
+
+        const int base_bin_next_row_index =
+            base_bin_index + (camParams.nrOfPixelsPerLine >> 5);
+        const uint32_t up_and = grad_bin_y[base_bin_index] &
+                                prev_grad_bin_y[base_bin_next_row_index];
+        const uint32_t down_and = grad_bin_y[base_bin_next_row_index] &
+                                  prev_grad_bin_y[base_bin_index];
+        const uint32_t up = up_and & ~down_and;
+        const uint32_t down = down_and & ~up_and;
+
+        for (int j = 0; j < camParams.nrOfPixelsPerLine; ++j) {
+          const int pixel_index = base_pixel + j;
+          const int bit_index = pixel_index & 31;
+          rgb565[pixel_index] = (((left >> bit_index) & 1) << 15) |
+                                (((right >> bit_index) & 1) << 10);
+        }
       }
     }
 

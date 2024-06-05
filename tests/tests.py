@@ -141,7 +141,7 @@ def main():
 
         total_corr_x = np.zeros((HEIGHT, WIDTH), dtype=np.int8)
         total_corr_y = np.zeros((HEIGHT, WIDTH), dtype=np.int8)
-        for i in range(1, 32):
+        for i in range(1, 16):
             corr_x = spatial_corr_x(grad_x_bin, prev_x, i)
             corr_y = spatial_corr_y(grad_y_bin, prev_y, i)
             total_corr_x = np.where(corr_x != 0, corr_x * i, total_corr_x)
