@@ -30,10 +30,8 @@ int main() {
   cv::Mat grayscale_mat(cv::Size(WIDTH, HEIGHT), CV_8U);
   cv::Mat rgb_mat(cv::Size(WIDTH, HEIGHT), CV_8UC3);
 
-  std::uint32_t grad_bin_x[WIDTH / 32 * HEIGHT]{};
-  std::uint32_t prev_grad_bin_x[WIDTH / 32 * HEIGHT]{};
-  std::uint32_t grad_bin_y[WIDTH / 32 * HEIGHT]{};
-  std::uint32_t prev_grad_bin_y[WIDTH / 32 * HEIGHT]{};
+  std::uint32_t grad_bin[WIDTH / 32 * HEIGHT * 2]{};
+  std::uint32_t prev_grad_bin[WIDTH / 32 * HEIGHT * 2]{};
 
   while (cap.isOpened()) {
     const auto current_time = std::chrono::steady_clock::now();
@@ -87,14 +85,11 @@ int main() {
           dy = gray_down - gray_up > GRAD_THRESHOLD;
         }
 
-        const int base_bin_index = pixel_index >> 5;
-        const int bit_index = pixel_index & 31;
-        grad_bin_x[base_bin_index] =
-            (grad_bin_x[base_bin_index] & ~(1 << bit_index)) |
-            (dx << bit_index);
-        grad_bin_y[base_bin_index] =
-            (grad_bin_y[base_bin_index] & ~(1 << bit_index)) |
-            (dy << bit_index);
+        const int base_bin_index = pixel_index >> 4;
+        const int bit_index = (pixel_index & 15) << 1;
+        grad_bin[base_bin_index] =
+            (grad_bin[base_bin_index] & ~(0b11 << bit_index)) |
+            (dx << bit_index) | (dy << (bit_index + 1));
       }
     }
 
@@ -103,39 +98,46 @@ int main() {
          base_pixel <
          (camParams.nrOfLinesPerImage - 1) * camParams.nrOfPixelsPerLine;
          base_pixel += camParams.nrOfPixelsPerLine) {
-      for (int j = 0; j < camParams.nrOfPixelsPerLine; ++j) {
+      for (int j_base = 0; j_base < camParams.nrOfPixelsPerLine; j_base += 16) {
 
-        const int pixel_index = base_pixel + j;
-        const int base_bin_index = pixel_index >> 5;
-        const int bit_index = pixel_index & 31;
+        const int base_bin_index = (base_pixel + j_base) >> 4;
 
         const uint32_t left_and =
-            grad_bin_x[base_bin_index] & (prev_grad_bin_x[base_bin_index] >> 1);
+            grad_bin[base_bin_index] & (prev_grad_bin[base_bin_index] >> 2);
         const uint32_t right_and =
-            (grad_bin_x[base_bin_index] >> 1) & prev_grad_bin_x[base_bin_index];
+            (grad_bin[base_bin_index] >> 2) & prev_grad_bin[base_bin_index];
         const uint32_t left = left_and & ~right_and;
         const uint32_t right = right_and & ~left_and;
 
         const int base_bin_next_row_index =
-            base_bin_index + (camParams.nrOfPixelsPerLine >> 5);
-        const uint32_t up_and = grad_bin_y[base_bin_index] &
-                                prev_grad_bin_y[base_bin_next_row_index];
-        const uint32_t down_and = grad_bin_y[base_bin_next_row_index] &
-                                  prev_grad_bin_y[base_bin_index];
+            base_bin_index + (camParams.nrOfPixelsPerLine >> 4);
+        const uint32_t up_and =
+            grad_bin[base_bin_index] & prev_grad_bin[base_bin_next_row_index];
+        const uint32_t down_and =
+            grad_bin[base_bin_next_row_index] & prev_grad_bin[base_bin_index];
         const uint32_t up = up_and & ~down_and;
         const uint32_t down = down_and & ~up_and;
 
-        // Blue
-        rgb_mat.data[pixel_index * 3 + 0] = 0;
-        // Green
-        rgb_mat.data[pixel_index * 3 + 1] = (((right >> bit_index) & 1) << 7);
-        // Red
-        rgb_mat.data[pixel_index * 3 + 2] = (((left >> bit_index) & 1) << 7);
+        for (int j = 0; j < 16; ++j) {
+          const int pixel_index = base_pixel + j_base + j;
+          const int bit_index = (pixel_index & 15) << 1;
+
+          const uint8_t left_flow = (((left >> bit_index) & 1) << 7);
+          const uint8_t right_flow = (((right >> bit_index) & 1) << 7);
+          const uint8_t up_flow = (((up >> (bit_index + 1)) & 1) << 7);
+          const uint8_t down_flow = (((down >> (bit_index + 1)) & 1) << 7);
+
+          // Blue
+          rgb_mat.data[pixel_index * 3 + 0] = 0;
+          // Green
+          rgb_mat.data[pixel_index * 3 + 1] = right_flow;
+          // Red
+          rgb_mat.data[pixel_index * 3 + 2] = left_flow;
+        }
       }
     }
 
-    memcpy(prev_grad_bin_x, grad_bin_x, sizeof(grad_bin_x));
-    memcpy(prev_grad_bin_y, grad_bin_y, sizeof(grad_bin_y));
+    memcpy(prev_grad_bin, grad_bin, sizeof(grad_bin));
 
     // ------------ C code END ---------------------------
 
