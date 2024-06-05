@@ -16,18 +16,19 @@ module opticFlowColorCI #(
     assign result = is_active ? rgb565 : 32'd0;
 
     /*
-        ValueA contains 2*4 bits (LSBs) corresponding to the {up, down, left, right} flow bits for two pixels
+        ValueA contains 2*4 bits corresponding to the {up, down, left, right} flow bits for two pixels
+        ValueB indexes one of the four groups of 2*4 bits of A
         Result contains RGB565 colors for these two pixels
     */
 
-    wire right_0 = valueA[0];
-    wire left_0 = valueA[1];
-    wire down_0 = valueA[2];
-    wire up_0 = valueA[3];
-    wire right_1 = valueA[4];
-    wire left_1 = valueA[5];
-    wire down_1 = valueA[6];
-    wire up_1 = valueA[7];
+    wire right_0 = valueA[{valueB[1:0], 3'd0}];
+    wire left_0 = valueA[{valueB[1:0], 3'd1}];
+    wire down_0 = valueA[{valueB[1:0], 3'd2}];
+    wire up_0 = valueA[{valueB[1:0], 3'd3}];
+    wire right_1 = valueA[{valueB[1:0], 3'd4}];
+    wire left_1 = valueA[{valueB[1:0], 3'd5}];
+    wire down_1 = valueA[{valueB[1:0], 3'd6}];
+    wire up_1 = valueA[{valueB[1:0], 3'd7}];
     wire[4:0] red_0 = (left_0 << 4) | (down_0 << 4);
     wire[5:0] green_0 = (right_0 << 5) | (down_0 << 5);
     wire[4:0] blue_0 = (up_0 << 4) | (down_0 << 4);

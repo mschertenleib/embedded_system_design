@@ -70,11 +70,19 @@ module opticFlowColorCI_tb;
                 .expected_done(1'b0), .expected_result(32'd0));
     
         // Test computation
-        test_ci(.test_start(1'b1), .test_ciN(8'd30), .test_valueA(8'b00000001), .test_valueB(valueB),
+        test_ci(.test_start(1'b1), .test_ciN(8'd30), .test_valueA(8'b00000001), .test_valueB(32'd0),
                 .expected_done(1'b1), .expected_result({16'h0, 16'h0400}));
-        test_ci(.test_start(1'b1), .test_ciN(8'd30), .test_valueA(8'b10100101), .test_valueB(valueB),
+        test_ci(.test_start(1'b1), .test_ciN(8'd30), .test_valueA(8'b10100101), .test_valueB(32'd0),
                 .expected_done(1'b1), .expected_result({16'h8010, 16'h8410}));
-        test_ci(.test_start(1'b1), .test_ciN(8'd30), .test_valueA(8'b01000010), .test_valueB(valueB),
+        test_ci(.test_start(1'b1), .test_ciN(8'd30), .test_valueA(8'b01000010), .test_valueB(32'd0),
+                .expected_done(1'b1), .expected_result({16'h8410, 16'h8000}));
+
+        // Same thing but also using valueB to index
+        test_ci(.test_start(1'b1), .test_ciN(8'd30), .test_valueA({8'b00000001, 16'h1234}), .test_valueB(32'd2),
+                .expected_done(1'b1), .expected_result({16'h0, 16'h0400}));
+        test_ci(.test_start(1'b1), .test_ciN(8'd30), .test_valueA({8'b10100101, 16'h1234}), .test_valueB(32'd2),
+                .expected_done(1'b1), .expected_result({16'h8010, 16'h8410}));
+        test_ci(.test_start(1'b1), .test_ciN(8'd30), .test_valueA({8'b01000010, 16'h1234}), .test_valueB(32'd2),
                 .expected_done(1'b1), .expected_result({16'h8410, 16'h8000}));
 
         $finish;

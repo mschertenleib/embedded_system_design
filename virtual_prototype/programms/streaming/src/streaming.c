@@ -3,8 +3,8 @@
 #include <swap.h>
 #include <vga.h>
 
-#define DMA       // Do transfers with DMA
-#define STREAMING // Streaming
+#define DMA // Do transfers with DMA
+// #define STREAMING // Streaming
 // #define __RGB565__
 
 static void waitDMA(void) {
