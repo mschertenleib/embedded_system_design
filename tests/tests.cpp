@@ -58,49 +58,48 @@ int main() {
     // ------------ C code BEGIN -------------------------
 
     // Convert grayscale to binary gradients
-    for (int base_pixel = camParams.nrOfPixelsPerLine;
-         base_pixel <
+
+    // Skip first and last rows and cols
+    for (int pixel_index = camParams.nrOfPixelsPerLine;
+         pixel_index <
          (camParams.nrOfLinesPerImage - 1) * camParams.nrOfPixelsPerLine;
-         base_pixel += camParams.nrOfPixelsPerLine) {
-      for (int j = 1; j < camParams.nrOfPixelsPerLine - 1; ++j) {
+         ++pixel_index) {
 
-        const int pixel_index = base_pixel + j;
-        const uint8_t gray_left = grayscale[pixel_index - 1];
-        const uint8_t gray_right = grayscale[pixel_index + 1];
-        const uint8_t gray_up =
-            grayscale[pixel_index - camParams.nrOfPixelsPerLine];
-        const uint8_t gray_down =
-            grayscale[pixel_index + camParams.nrOfPixelsPerLine];
+      const uint8_t gray_left = grayscale[pixel_index - 1];
+      const uint8_t gray_right = grayscale[pixel_index + 1];
+      const uint8_t gray_up =
+          grayscale[pixel_index - camParams.nrOfPixelsPerLine];
+      const uint8_t gray_down =
+          grayscale[pixel_index + camParams.nrOfPixelsPerLine];
 
-        uint8_t dx;
-        if (gray_right >= gray_left) {
-          dx = gray_right - gray_left > GRAD_THRESHOLD;
-        } else {
-          dx = gray_left - gray_right > GRAD_THRESHOLD;
-        }
-        uint8_t dy;
-        if (gray_up >= gray_down) {
-          dy = gray_up - gray_down > GRAD_THRESHOLD;
-        } else {
-          dy = gray_down - gray_up > GRAD_THRESHOLD;
-        }
-
-        const int base_bin_index = pixel_index >> 4;
-        const int bit_index = (pixel_index & 15) << 1;
-        grad_bin[base_bin_index] =
-            (grad_bin[base_bin_index] & ~(0b11 << bit_index)) |
-            (dx << bit_index) | (dy << (bit_index + 1));
+      uint8_t dx;
+      if (gray_right >= gray_left) {
+        dx = gray_right - gray_left > GRAD_THRESHOLD;
+      } else {
+        dx = gray_left - gray_right > GRAD_THRESHOLD;
       }
+      uint8_t dy;
+      if (gray_up >= gray_down) {
+        dy = gray_up - gray_down > GRAD_THRESHOLD;
+      } else {
+        dy = gray_down - gray_up > GRAD_THRESHOLD;
+      }
+
+      const int base_bin_index = pixel_index >> 4;
+      const int bit_index = (pixel_index & 15) << 1;
+      grad_bin[base_bin_index] =
+          (grad_bin[base_bin_index] & ~(0b11 << bit_index)) |
+          (dx << bit_index) | (dy << (bit_index + 1));
     }
 
     // Convert binary gradients to optic flow
 
     // Skip the last row because we need to compute a difference between two
     // rows
-    const int num_pixel_blocks =
-        ((camParams.nrOfLinesPerImage - 1) * camParams.nrOfPixelsPerLine) >> 4;
-
-    for (int base_index = 0; base_index < num_pixel_blocks; ++base_index) {
+    for (int base_index = 0;
+         base_index <
+         ((camParams.nrOfLinesPerImage - 1) * camParams.nrOfPixelsPerLine) >> 4;
+         ++base_index) {
 
       const uint32_t left_and =
           grad_bin[base_index] & (prev_grad_bin[base_index] >> 2);

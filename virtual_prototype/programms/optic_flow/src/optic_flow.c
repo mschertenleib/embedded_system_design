@@ -15,10 +15,8 @@ int main() {
   // Input image
   volatile uint8_t grayscale[640 * 480];
   // Binary gradients
-  volatile uint32_t grad_bin_x[640 / 32 * 480];
-  volatile uint32_t prev_grad_bin_x[640 / 32 * 480];
-  volatile uint32_t grad_bin_y[640 / 32 * 480];
-  volatile uint32_t prev_grad_bin_y[640 / 32 * 480];
+  volatile uint32_t grad_bin[640 / 32 * 480 * 2];
+  volatile uint32_t prev_grad_bin[640 / 32 * 480 * 2];
 
   volatile uint32_t result, cycles, stall, idle;
   volatile unsigned int *vga = (unsigned int *)0X50000020;
@@ -51,79 +49,83 @@ int main() {
     asm volatile("l.nios_rrr r0,r0,%[in2],0xC" ::[in2] "r"(7));
 
     // Convert grayscale to binary gradients
-    for (int base_pixel = camParams.nrOfPixelsPerLine;
-         base_pixel <
+
+    // Skip first and last rows and cols
+    for (int pixel_index = camParams.nrOfPixelsPerLine;
+         pixel_index <
          (camParams.nrOfLinesPerImage - 1) * camParams.nrOfPixelsPerLine;
-         base_pixel += camParams.nrOfPixelsPerLine) {
-      for (int j = 1; j < camParams.nrOfPixelsPerLine - 1; ++j) {
+         ++pixel_index) {
 
-        const int pixel_index = base_pixel + j;
-        const uint8_t gray_left = grayscale[pixel_index - 1];
-        const uint8_t gray_right = grayscale[pixel_index + 1];
-        const uint8_t gray_up =
-            grayscale[pixel_index - camParams.nrOfPixelsPerLine];
-        const uint8_t gray_down =
-            grayscale[pixel_index + camParams.nrOfPixelsPerLine];
+      const uint8_t gray_left = grayscale[pixel_index - 1];
+      const uint8_t gray_right = grayscale[pixel_index + 1];
+      const uint8_t gray_up =
+          grayscale[pixel_index - camParams.nrOfPixelsPerLine];
+      const uint8_t gray_down =
+          grayscale[pixel_index + camParams.nrOfPixelsPerLine];
 
-        uint8_t dx;
-        if (gray_right >= gray_left) {
-          dx = gray_right - gray_left > GRAD_THRESHOLD;
-        } else {
-          dx = gray_left - gray_right > GRAD_THRESHOLD;
-        }
-        uint8_t dy;
-        if (gray_up >= gray_down) {
-          dy = gray_up - gray_down > GRAD_THRESHOLD;
-        } else {
-          dy = gray_down - gray_up > GRAD_THRESHOLD;
-        }
-
-        const int base_bin_index = pixel_index >> 5;
-        const int bit_index = pixel_index & 31;
-        grad_bin_x[base_bin_index] =
-            (grad_bin_x[base_bin_index] & ~(1 << bit_index)) |
-            (dx << bit_index);
-        grad_bin_y[base_bin_index] =
-            (grad_bin_y[base_bin_index] & ~(1 << bit_index)) |
-            (dy << bit_index);
+      uint8_t dx;
+      if (gray_right >= gray_left) {
+        dx = gray_right - gray_left > GRAD_THRESHOLD;
+      } else {
+        dx = gray_left - gray_right > GRAD_THRESHOLD;
       }
+      uint8_t dy;
+      if (gray_up >= gray_down) {
+        dy = gray_up - gray_down > GRAD_THRESHOLD;
+      } else {
+        dy = gray_down - gray_up > GRAD_THRESHOLD;
+      }
+
+      const int base_bin_index = pixel_index >> 4;
+      const int bit_index = (pixel_index & 15) << 1;
+      grad_bin[base_bin_index] =
+          (grad_bin[base_bin_index] & ~(0b11 << bit_index)) |
+          (dx << bit_index) | (dy << (bit_index + 1));
     }
 
     // Convert binary gradients to optic flow
-    for (int base_pixel = 0; base_pixel < (camParams.nrOfLinesPerImage - 1) *
-                                              camParams.nrOfPixelsPerLine;
-         base_pixel += camParams.nrOfPixelsPerLine) {
-      for (int j_base = 0; j_base < camParams.nrOfPixelsPerLine; j_base += 32) {
 
-        const int base_bin_index = (base_pixel + j_base) >> 5;
+    // Skip the last row because we need to compute a difference between two
+    // rows
+    for (int base_index = 0;
+         base_index <
+         ((camParams.nrOfLinesPerImage - 1) * camParams.nrOfPixelsPerLine) >> 4;
+         ++base_index) {
 
-        const uint32_t left_and =
-            grad_bin_x[base_bin_index] & (prev_grad_bin_x[base_bin_index] >> 1);
-        const uint32_t right_and =
-            (grad_bin_x[base_bin_index] >> 1) & prev_grad_bin_x[base_bin_index];
-        const uint32_t left = left_and & ~right_and;
-        const uint32_t right = right_and & ~left_and;
+      const uint32_t left_and =
+          grad_bin[base_index] & (prev_grad_bin[base_index] >> 2);
+      const uint32_t right_and =
+          (grad_bin[base_index] >> 2) & prev_grad_bin[base_index];
+      const uint32_t left = left_and & ~right_and;
+      const uint32_t right = right_and & ~left_and;
 
-        const int base_bin_next_row_index =
-            base_bin_index + (camParams.nrOfPixelsPerLine >> 5);
-        const uint32_t up_and = grad_bin_y[base_bin_index] &
-                                prev_grad_bin_y[base_bin_next_row_index];
-        const uint32_t down_and = grad_bin_y[base_bin_next_row_index] &
-                                  prev_grad_bin_y[base_bin_index];
-        const uint32_t up = up_and & ~down_and;
-        const uint32_t down = down_and & ~up_and;
+      const int base_index_next_row =
+          base_index + (camParams.nrOfPixelsPerLine >> 4);
+      const uint32_t up_and =
+          grad_bin[base_index] & prev_grad_bin[base_index_next_row];
+      const uint32_t down_and =
+          grad_bin[base_index_next_row] & prev_grad_bin[base_index];
+      const uint32_t up = up_and & ~down_and;
+      const uint32_t down = down_and & ~up_and;
 
-        for (int j = 0; j < camParams.nrOfPixelsPerLine; ++j) {
-          const int pixel_index = base_pixel + j;
-          const int bit_index = pixel_index & 31;
-          rgb565[pixel_index] = (((left >> bit_index) & 1) << 15) |
-                                (((right >> bit_index) & 1) << 10);
-        }
+      for (int j = 0; j < 16; ++j) {
+        const int pixel_index = (base_index << 4) + j;
+        const int bit_index = (pixel_index & 15) << 1;
+
+        // 1-bit flow direction
+        uint8_t left_flow = (left >> bit_index) & 1;
+        uint8_t right_flow = (right >> bit_index) & 1;
+        uint8_t up_flow = (up >> (bit_index + 1)) & 1;
+        uint8_t down_flow = (down >> (bit_index + 1)) & 1;
+
+        const uint8_t red = (left_flow << 4) | (down_flow << 4);
+        const uint8_t green = (right_flow << 5) | (down_flow << 5);
+        const uint8_t blue = (up_flow << 4) | (down_flow << 4);
+        rgb565[pixel_index] = (red << 11) | (green << 5) | blue;
       }
     }
 
-    memcpy(prev_grad_bin_x, grad_bin_x, sizeof(grad_bin_x));
-    memcpy(prev_grad_bin_y, grad_bin_y, sizeof(grad_bin_y));
+    memcpy(prev_grad_bin, grad_bin, sizeof(grad_bin));
 
     // Read counters
     asm volatile("l.nios_rrr %[out1],r0,%[in2],0xC"
