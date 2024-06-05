@@ -2,6 +2,7 @@
 
 #include <chrono>
 #include <cstdint>
+#include <iomanip>
 #include <iostream>
 #include <thread>
 
@@ -104,6 +105,14 @@ int main() {
          ((camParams.nrOfLinesPerImage - 1) * camParams.nrOfPixelsPerLine) >> 4;
          ++base_index) {
 
+      const int base_index_next_row =
+          base_index + (camParams.nrOfPixelsPerLine >> 4);
+
+      grad_bin[base_index] = 0b0010'0101'1010'1000;
+      prev_grad_bin[base_index] = 0b1001'0001'0010'0100;
+      grad_bin[base_index_next_row] = 0b1100'1001'0001'0000;
+      prev_grad_bin[base_index_next_row] = 0b0101'0100'1010'0100;
+
       const uint32_t left_and =
           grad_bin[base_index] & (prev_grad_bin[base_index] >> 2);
       const uint32_t right_and =
@@ -111,14 +120,17 @@ int main() {
       const uint32_t left = left_and & ~right_and;
       const uint32_t right = right_and & ~left_and;
 
-      const int base_index_next_row =
-          base_index + (camParams.nrOfPixelsPerLine >> 4);
       const uint32_t up_and =
           grad_bin[base_index] & prev_grad_bin[base_index_next_row];
       const uint32_t down_and =
           grad_bin[base_index_next_row] & prev_grad_bin[base_index];
       const uint32_t up = up_and & ~down_and;
       const uint32_t down = down_and & ~up_and;
+      std::cout << std::hex << up << std::endl;
+      std::cout << std::hex << down << std::endl;
+      std::cout << std::hex << left << std::endl;
+      std::cout << std::hex << right << std::endl;
+      exit(0);
 
       for (int j = 0; j < 16; ++j) {
         const int pixel_index = (base_index << 4) + j;
