@@ -99,8 +99,7 @@ def edges_y(img: np.ndarray) -> np.ndarray:
 
 
 def main():
-    cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
-    # cap = cv2.VideoCapture("drive.mp4")
+    cap = cv2.VideoCapture(0)
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, WIDTH)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, HEIGHT)
     if not cap.isOpened():
