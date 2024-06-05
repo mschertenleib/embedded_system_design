@@ -94,46 +94,44 @@ int main() {
     }
 
     // Convert binary gradients to optic flow
-    for (int base_pixel = camParams.nrOfPixelsPerLine;
-         base_pixel <
-         (camParams.nrOfLinesPerImage - 1) * camParams.nrOfPixelsPerLine;
-         base_pixel += camParams.nrOfPixelsPerLine) {
-      for (int j_base = 0; j_base < camParams.nrOfPixelsPerLine; j_base += 16) {
 
-        const int base_bin_index = (base_pixel + j_base) >> 4;
+    // Skip the last row because we need to compute a difference between two
+    // rows
+    const int num_pixel_blocks =
+        ((camParams.nrOfLinesPerImage - 1) * camParams.nrOfPixelsPerLine) >> 4;
 
-        const uint32_t left_and =
-            grad_bin[base_bin_index] & (prev_grad_bin[base_bin_index] >> 2);
-        const uint32_t right_and =
-            (grad_bin[base_bin_index] >> 2) & prev_grad_bin[base_bin_index];
-        const uint32_t left = left_and & ~right_and;
-        const uint32_t right = right_and & ~left_and;
+    for (int base_index = 0; base_index < num_pixel_blocks; ++base_index) {
 
-        const int base_bin_next_row_index =
-            base_bin_index + (camParams.nrOfPixelsPerLine >> 4);
-        const uint32_t up_and =
-            grad_bin[base_bin_index] & prev_grad_bin[base_bin_next_row_index];
-        const uint32_t down_and =
-            grad_bin[base_bin_next_row_index] & prev_grad_bin[base_bin_index];
-        const uint32_t up = up_and & ~down_and;
-        const uint32_t down = down_and & ~up_and;
+      const uint32_t left_and =
+          grad_bin[base_index] & (prev_grad_bin[base_index] >> 2);
+      const uint32_t right_and =
+          (grad_bin[base_index] >> 2) & prev_grad_bin[base_index];
+      const uint32_t left = left_and & ~right_and;
+      const uint32_t right = right_and & ~left_and;
 
-        for (int j = 0; j < 16; ++j) {
-          const int pixel_index = base_pixel + j_base + j;
-          const int bit_index = (pixel_index & 15) << 1;
+      const int base_index_next_row =
+          base_index + (camParams.nrOfPixelsPerLine >> 4);
+      const uint32_t up_and =
+          grad_bin[base_index] & prev_grad_bin[base_index_next_row];
+      const uint32_t down_and =
+          grad_bin[base_index_next_row] & prev_grad_bin[base_index];
+      const uint32_t up = up_and & ~down_and;
+      const uint32_t down = down_and & ~up_and;
 
-          const uint8_t left_flow = (((left >> bit_index) & 1) << 7);
-          const uint8_t right_flow = (((right >> bit_index) & 1) << 7);
-          const uint8_t up_flow = (((up >> (bit_index + 1)) & 1) << 7);
-          const uint8_t down_flow = (((down >> (bit_index + 1)) & 1) << 7);
+      for (int j = 0; j < 16; ++j) {
+        const int pixel_index = (base_index << 4) + j;
+        const int bit_index = (pixel_index & 15) << 1;
 
-          // Blue
-          rgb_mat.data[pixel_index * 3 + 0] = 0;
-          // Green
-          rgb_mat.data[pixel_index * 3 + 1] = right_flow;
-          // Red
-          rgb_mat.data[pixel_index * 3 + 2] = left_flow;
-        }
+        // 1-bit flow direction
+        uint8_t left_flow = (left >> bit_index) & 1;
+        uint8_t right_flow = (right >> bit_index) & 1;
+        uint8_t up_flow = (up >> (bit_index + 1)) & 1;
+        uint8_t down_flow = (down >> (bit_index + 1)) & 1;
+
+        rgb_mat.data[pixel_index * 3 + 0] = (up_flow << 7) | (down_flow << 7);
+        rgb_mat.data[pixel_index * 3 + 1] =
+            (right_flow << 7) | (down_flow << 7);
+        rgb_mat.data[pixel_index * 3 + 2] = (left_flow << 7) | (down_flow << 7);
       }
     }
 
