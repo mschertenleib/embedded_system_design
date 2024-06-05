@@ -22,6 +22,7 @@
 ../../../modules/ramDmaCi/verilog/dualPortSSram.v
 ../../../modules/ramDmaCi/verilog/ramDmaCi.v
 ../../../modules/camera/verilog/camera.v
+../../../modules/camera/verilog/threshedge.v
 ../../../modules/delay/verilog/delayIse.v
 ../../../modules/swapbyteIse/verilog/swapByteIse.v
 ../../../modules/uart/verilog/baudGenerator.v
