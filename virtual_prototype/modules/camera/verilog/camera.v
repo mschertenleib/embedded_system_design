@@ -1,6 +1,7 @@
 module camera #(
     parameter [7:0] customInstructionId = 8'd0,
-    parameter clockFrequencyInHz = 2000
+    parameter clockFrequencyInHz = 2000,
+    parameter imgwidth = 640
 ) (
     input  wire        clock,
     pclk,
@@ -168,6 +169,7 @@ module camera #(
 
   //`define RGB565_GRAYSCALE
   `define GRAYSCALE_U8
+  `define EDGE_THRESHOLD
 
 `ifdef GRAYSCALE_U8
   reg [7:0] s_byte7Reg, s_byte6Reg, s_byte5Reg, s_byte4Reg, s_byte3Reg, s_byte2Reg, s_byte1Reg;
@@ -176,6 +178,10 @@ module camera #(
   wire [31:0] s_pixelWord2 = {s_byte5Reg, s_byte4Reg, s_byte7Reg, s_byte6Reg};
   wire [31:0] s_pixelWord1 = {s_byte1Reg, camData, s_byte3Reg, s_byte2Reg};
   wire s_weLineBuffer = (s_pixelCountReg[2:0] == 3'b111) ? hsync : 1'b0;
+  `ifdef EDGE_THRESHOLD
+    reg[7:0] img_px_strip [640*3];
+    reg[imgwidth-1:0] th_dx, th_dy;
+  `endif
 
   always @(posedge pclk) begin
     s_byte7Reg <= (s_pixelCountReg[2:0] == 3'b000 && hsync == 1'b1) ? camData : s_byte7Reg;
@@ -186,6 +192,8 @@ module camera #(
     s_byte2Reg <= (s_pixelCountReg[2:0] == 3'b101 && hsync == 1'b1) ? camData : s_byte2Reg;
     s_byte1Reg <= (s_pixelCountReg[2:0] == 3'b110 && hsync == 1'b1) ? camData : s_byte1Reg;
   end
+  
+
 `else
   reg [7:0] s_byte3Reg, s_byte2Reg, s_byte1Reg;
   reg [8:0] s_busSelectReg;
