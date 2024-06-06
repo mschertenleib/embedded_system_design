@@ -4,8 +4,10 @@
 #include <swap.h>
 #include <vga.h>
 
+//#define USE_DMA_FOR_GRAD
+//#define USE_CI_FOR_GRAD
 #define USE_OPTIC_FLOW_CI
-#define USE_DMA
+#define USE_DMA_FOR_FLOW
 
 #define GRAD_THRESHOLD 10
 
@@ -69,6 +71,138 @@ int main() {
 
     // Convert grayscale to binary gradients
 
+#ifdef USE_DMA_FOR_GRAD
+
+    asm volatile(
+        "l.nios_rrr r0,%[in1],%[in2],20" ::[in1] "r"(burstSize | writeBit),
+        [in2] "r"(39));
+
+    for (int row = 1; row < 479; ++row) {
+
+      asm volatile(
+          "l.nios_rrr r0,%[in1],%[in2],20" ::[in1] "r"(blockSize | writeBit),
+          [in2] "r"(480));
+      asm volatile(
+          "l.nios_rrr r0,%[in1],%[in2],20" ::[in1] "r"(busStartAddress |
+                                                       writeBit),
+          [in2] "r"((uint32_t)&grayscale[((row - 1) << 9) + ((row - 1) << 7)]));
+      asm volatile("l.nios_rrr r0,%[in1],%[in2],20" ::[in1] "r"(
+                       memoryStartAddress | writeBit),
+                   [in2] "r"(0));
+      asm volatile("l.nios_rrr r0,%[in1],%[in2],20" ::[in1] "r"(statusControl |
+                                                                writeBit),
+                   [in2] "r"(1));
+      waitDMA();
+
+      uint32_t gray_up_u32;
+      uint32_t gray_center_u32;
+      uint32_t gray_down_u32;
+      uint32_t gray_center_prev_u32;
+      uint32_t gray_center_next_u32;
+      asm volatile("l.nios_rrr %[out1],%[in1],r0,20"
+                   : [out1] "=r"(gray_center_prev_u32)
+                   : [in1] "r"(160));
+      asm volatile("l.nios_rrr %[out1],%[in1],r0,20"
+                   : [out1] "=r"(gray_center_u32)
+                   : [in1] "r"(161));
+      gray_center_prev_u32 = swap_u32(gray_center_prev_u32);
+      gray_center_u32 = swap_u32(gray_center_u32);
+
+      uint32_t grad_bin_u32 = 0;
+
+      for (int base_index = 1; base_index < 159; ++base_index) {
+
+        asm volatile("l.nios_rrr %[out1],%[in1],r0,20"
+                     : [out1] "=r"(gray_up_u32)
+                     : [in1] "r"(base_index));
+        asm volatile("l.nios_rrr %[out1],%[in1],r0,20"
+                     : [out1] "=r"(gray_center_next_u32)
+                     : [in1] "r"(160 + base_index + 1));
+        asm volatile("l.nios_rrr %[out1],%[in1],r0,20"
+                     : [out1] "=r"(gray_down_u32)
+                     : [in1] "r"(320 + base_index));
+        gray_up_u32 = swap_u32(gray_up_u32);
+        gray_center_next_u32 = swap_u32(gray_center_next_u32);
+        gray_down_u32 = swap_u32(gray_down_u32);
+
+        for (int i = 0; i < 4; ++i) {
+
+#if USE_CI_FOR GRAD
+          uint8_t gray_left = (i == 0)
+                                  ? (gray_center_prev_u32 >> 24) & 0xff
+                                  : (gray_center_u32 >> ((i - 1) << 3)) & 0xff;
+          uint8_t gray_right = (i == 3)
+                                   ? gray_center_next_u32 & 0xff
+                                   : (gray_center_u32 >> ((i + 1) << 3)) & 0xff;
+          uint8_t gray_up = (gray_up_u32 >> (i << 3)) & 0xff;
+          uint8_t gray_down = (gray_down_u32 >> (i << 3)) & 0xff;
+
+          uint32_t dx_dy;
+          uint32_t d_u_r_l = ((uint32_t)gray_down << 24) |
+                             ((uint32_t)gray_up << 16) |
+                             ((uint32_t)gray_right << 8) | (uint32_t)gray_left;
+          asm volatile("l.nios_rrr %[out1],%[in1],r0,0x32"
+                       : [out1] "=r"(dx_dy)
+                       : [in1] "r"(d_u_r_l));
+
+          const int bit_index = 30 - (((base_index & 0b11) << 2) + i) << 1;
+          grad_bin_u32 =
+              (grad_bin_u32 & ~(0b11 << bit_index)) | (dx_dy << bit_index);
+
+#else
+          uint8_t gray_left = (i == 0)
+                                  ? (gray_center_prev_u32 >> 24) & 0xff
+                                  : (gray_center_u32 >> ((i - 1) << 3)) & 0xff;
+          uint8_t gray_right = (i == 3)
+                                   ? gray_center_next_u32 & 0xff
+                                   : (gray_center_u32 >> ((i + 1) << 3)) & 0xff;
+          uint8_t gray_up = (gray_up_u32 >> (i << 3)) & 0xff;
+          uint8_t gray_down = (gray_down_u32 >> (i << 3)) & 0xff;
+
+          uint8_t dx;
+          if (gray_right >= gray_left) {
+            dx = gray_right - gray_left > GRAD_THRESHOLD;
+          } else {
+            dx = gray_left - gray_right > GRAD_THRESHOLD;
+          }
+          uint8_t dy;
+          if (gray_up >= gray_down) {
+            dy = gray_up - gray_down > GRAD_THRESHOLD;
+          } else {
+            dy = gray_down - gray_up > GRAD_THRESHOLD;
+          }
+
+          const int bit_index = 30 - (((base_index & 0b11) << 2) + i) << 1;
+          grad_bin_u32 = (grad_bin_u32 & ~(0b11 << bit_index)) |
+                         (dx << bit_index) | (dy << (bit_index + 1));
+#endif
+        }
+
+        if (base_index & 0b11 == 0b11) {
+          asm volatile("l.nios_rrr r0,%[in1],%[in2],20" ::[in1] "r"(
+                           writeBit | (base_index >> 2)),
+                       [in2] "r"(grad_bin_u32));
+        }
+
+        gray_center_prev_u32 = gray_center_u32;
+        gray_center_u32 = gray_center_next_u32;
+      }
+
+      asm volatile(
+          "l.nios_rrr r0,%[in1],%[in2],20" ::[in1] "r"(blockSize | writeBit),
+          [in2] "r"(40));
+      asm volatile("l.nios_rrr r0,%[in1],%[in2],20" ::[in1] "r"(
+                       busStartAddress | writeBit),
+                   [in2] "r"((uint32_t)&grad_bin[(row << 5) + (row << 3)]));
+      asm volatile("l.nios_rrr r0,%[in1],%[in2],20" ::[in1] "r"(
+                       memoryStartAddress | writeBit),
+                   [in2] "r"(0));
+      asm volatile("l.nios_rrr r0,%[in1],%[in2],20" ::[in1] "r"(statusControl |
+                                                                writeBit),
+                   [in2] "r"(2));
+      waitDMA();
+    }
+#else
     // Skip first and last rows and cols
     for (int pixel_index = camParams.nrOfPixelsPerLine;
          pixel_index <
@@ -101,6 +235,7 @@ int main() {
           (grad_bin[base_bin_index] & ~(0b11 << bit_index)) |
           (dx << bit_index) | (dy << (bit_index + 1));
     }
+#endif
 
     // Read counters
     asm volatile("l.nios_rrr %[out1],r0,%[in2],0xC"
@@ -119,7 +254,7 @@ int main() {
 
     // Convert binary gradients to optic flow
 
-#ifdef USE_DMA
+#ifdef USE_DMA_FOR_FLOW
 
     uint32_t *rgb565_as_u32 = (uint32_t *)&rgb565[0];
 
@@ -143,7 +278,7 @@ int main() {
           [in2] "r"(80));
       asm volatile("l.nios_rrr r0,%[in1],%[in2],20" ::[in1] "r"(
                        busStartAddress | writeBit),
-                   [in2] "r"(&grad_bin[(row << 5) + (row << 3)]));
+                   [in2] "r"((uint32_t)&grad_bin[(row << 5) + (row << 3)]));
       asm volatile("l.nios_rrr r0,%[in1],%[in2],20" ::[in1] "r"(
                        memoryStartAddress | writeBit),
                    [in2] "r"(0));
@@ -155,9 +290,10 @@ int main() {
       asm volatile(
           "l.nios_rrr r0,%[in1],%[in2],20" ::[in1] "r"(blockSize | writeBit),
           [in2] "r"(80));
-      asm volatile("l.nios_rrr r0,%[in1],%[in2],20" ::[in1] "r"(
-                       busStartAddress | writeBit),
-                   [in2] "r"(&prev_grad_bin[(row << 5) + (row << 3)]));
+      asm volatile(
+          "l.nios_rrr r0,%[in1],%[in2],20" ::[in1] "r"(busStartAddress |
+                                                       writeBit),
+          [in2] "r"((uint32_t)&prev_grad_bin[(row << 5) + (row << 3)]));
       asm volatile("l.nios_rrr r0,%[in1],%[in2],20" ::[in1] "r"(
                        memoryStartAddress | writeBit),
                    [in2] "r"(80));
@@ -327,6 +463,10 @@ int main() {
         const uint8_t green = (right_flow << 5) | (down_flow << 5);
         const uint8_t blue = (up_flow << 4) | (down_flow << 4);
         rgb565[pixel_index] = swap_u16((red << 11) | (green << 5) | blue);
+        /*if ((grad_bin[base_index] >> bit_index) & 1)
+          rgb565[pixel_index] |= swap_u16(0xf800);
+        if ((grad_bin[base_index] >> (bit_index + 1)) & 1)
+          rgb565[pixel_index] |= swap_u16(0x07e0);*/
       }
     }
 #endif

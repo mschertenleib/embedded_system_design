@@ -23,6 +23,7 @@
 ../../../modules/ramDmaCi/verilog/ramDmaCi.v
 ../../../modules/optic_flow/verilog/optic_flow_ci.v
 ../../../modules/optic_flow/verilog/optic_flow_color_ci.v
+../../../modules/optic_flow/verilog/abs_diff_ci.v
 ../../../modules/camera/verilog/camera.v
 ../../../modules/delay/verilog/delayIse.v
 ../../../modules/swapbyteIse/verilog/swapByteIse.v
