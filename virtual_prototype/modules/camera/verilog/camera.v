@@ -170,6 +170,7 @@ module camera #(
   //`define RGB565_GRAYSCALE
   `define GRAYSCALE_U8
   `define EDGE_THRESHOLD
+  `define testpattern
 
 `ifdef GRAYSCALE_U8
   reg [7:0] s_byte7Reg, s_byte6Reg, s_byte5Reg, s_byte4Reg, s_byte3Reg, s_byte2Reg, s_byte1Reg;
@@ -182,12 +183,13 @@ module camera #(
     reg[7:0] img_px_strip [imgwidth*3];
     reg [10:0] s_stripPixelCount;
     reg [10:0] s_dthResultBufferCount;
-    reg[imgwidth-3:0] thresh_dx, thresh_dy;
-    reg[7:0] DthByte;
+    reg [5:0] s_sramDTHaddr;
+    reg[imgwidth:0] thresh_dx, thresh_dy;
+    reg[31:0] DthWord;
     wire[(8*3*imgwidth)-1:0] img_px_strip_w_cpy;
-    wire[imgwidth-3:0] thdx_line,thdy_line;
-    wire s_stripReady = (s_lineCountValueReg >= 10'd3) & (s_pixelCountValueReg[10:2] == imgwidth);
-    wire s_stripUpdate = (s_lineCountValueReg > 10'd3) & (s_pixelCountValueReg[10:2] == imgwidth-1);
+    wire[imgwidth:0] thdx_line,thdy_line;
+    wire s_stripReady = (s_lineCountReg >= 10'd3) & (s_pixelCountReg[10:2] == imgwidth);
+    wire s_stripUpdate = (s_lineCountReg > 10'd3) & (s_pixelCountReg[10:2] == 0);
   `endif
 
   always @(posedge pclk) begin
@@ -273,21 +275,26 @@ module camera #(
                 .thdx(thdx),
                 .thdy(thdy)
             );
-            assign thdx_line[i-1] = thdx;
-            assign thdy_line[i-1] = thdy;
+            assign thdx_line[i] = thdx;
+            assign thdy_line[i] = thdy;
         end
     endgenerate
 
-    wire s_we_sramDthTransfert = s_dthResultBufferCount < imgwidth-4;
+    assign thdx_line[0] = 1'b0;
+    assign thdx_line[imgwidth-1] = 1'b0;
+    assign thdy_line[0] = 1'b0;
+    assign thdy_line[imgwidth-1] = 1'b0;
+    wire s_we_sramDthTransfert = s_dthResultBufferCount < imgwidth-1;
 
     //160*4 px per line, -> 3*160*4 = 1920 px per strip
+
     always @(posedge pclk) begin
       if(s_weLineBuffer)begin
         img_px_strip[s_stripPixelCount] <= s_grayscale1;
         img_px_strip[s_stripPixelCount+1] <= s_grayscale2;
         img_px_strip[s_stripPixelCount+2] <= s_grayscale3;
         img_px_strip[s_stripPixelCount+3] <= s_grayscale4;
-        s_stripPixelCount <= (s_stripPixelCount >= imgwidth*3) ? 0 : s_stripPixelCount + 4;
+        s_stripPixelCount <= (vsync == 1'b1)? 0 : (s_stripPixelCount >= (imgwidth*3)-1) ? imgwidth*2 : s_stripPixelCount + 4;
       end
       if(s_stripUpdate)begin //shift strip up before updating thresholds
         integer i;
@@ -301,11 +308,27 @@ module camera #(
         s_dthResultBufferCount <= 0;
       end
       if(s_we_sramDthTransfert)begin
-        DthByte <= {thresh_dx[s_dthResultBufferCount],thresh_dy[s_dthResultBufferCount],
+        `ifdef testpattern
+          DthWord <= {32'b00110011001100110011001100110011};
+        `else
+        DthWord <= {thresh_dx[s_dthResultBufferCount],thresh_dy[s_dthResultBufferCount],
                     thresh_dx[s_dthResultBufferCount+1],thresh_dy[s_dthResultBufferCount+1],
                     thresh_dx[s_dthResultBufferCount+2],thresh_dy[s_dthResultBufferCount+2],
-                    thresh_dx[s_dthResultBufferCount+3],thresh_dy[s_dthResultBufferCount+3]};
-        s_dthResultBufferCount <= s_dthResultBufferCount + 3'd4;
+                    thresh_dx[s_dthResultBufferCount+3],thresh_dy[s_dthResultBufferCount+3],
+                    thresh_dx[s_dthResultBufferCount+4],thresh_dy[s_dthResultBufferCount+4],
+                    thresh_dx[s_dthResultBufferCount+5],thresh_dy[s_dthResultBufferCount+5],
+                    thresh_dx[s_dthResultBufferCount+6],thresh_dy[s_dthResultBufferCount+6],
+                    thresh_dx[s_dthResultBufferCount+7],thresh_dy[s_dthResultBufferCount+7],
+                    thresh_dx[s_dthResultBufferCount+8],thresh_dy[s_dthResultBufferCount+8],
+                    thresh_dx[s_dthResultBufferCount+9],thresh_dy[s_dthResultBufferCount+9],
+                    thresh_dx[s_dthResultBufferCount+10],thresh_dy[s_dthResultBufferCount+10],
+                    thresh_dx[s_dthResultBufferCount+11],thresh_dy[s_dthResultBufferCount+11],
+                    thresh_dx[s_dthResultBufferCount+12],thresh_dy[s_dthResultBufferCount+12],
+                    thresh_dx[s_dthResultBufferCount+13],thresh_dy[s_dthResultBufferCount+13],
+                    thresh_dx[s_dthResultBufferCount+14],thresh_dy[s_dthResultBufferCount+14],
+                    thresh_dx[s_dthResultBufferCount+15],thresh_dy[s_dthResultBufferCount+15]};
+        `endif
+        s_dthResultBufferCount <= s_dthResultBufferCount + 3'd16;
       end
     end
   `endif 
@@ -313,13 +336,23 @@ module camera #(
 
   dualPortRam2k lineBuffer (
     `ifdef GRAYSCALE_U8
-        .address1(s_pixelCountReg[10:3]),
-        .address2(s_busSelectReg),
-        .clock1(pclk),
-        .clock2(clock),
-        .writeEnable(s_weLineBuffer),
-        .dataIn1(s_grayscalePixelWord),
-        .dataOut2(s_busPixelWord)
+      `ifdef EDGE_THRESHOLD
+          .address1(s_dthResultBufferCount[10:5]),// divide by 4 to get the correct address
+          .address2(s_busSelectReg),
+          .clock1(pclk),
+          .clock2(clock),
+          .writeEnable(s_we_sramDthTransfert),
+          .dataIn1(DthByte),
+          .dataOut2(s_busPixelWord)
+      `else
+          .address1(s_pixelCountReg[10:4]),
+          .address2(s_busSelectReg),
+          .clock1(pclk),
+          .clock2(clock),
+          .writeEnable(s_weLineBuffer),
+          .dataIn1(s_grayscalePixelWord),
+          .dataOut2(s_busPixelWord)
+      `endif
     `elsif RGB565_GRAYSCALE
         .address1(s_pixelCountReg[10:2]),
         .address2(s_busSelectReg),
@@ -327,14 +360,6 @@ module camera #(
         .clock2(clock),
         .writeEnable(s_weLineBuffer),
         .dataIn1(s_grayscalePixelWord),
-        .dataOut2(s_busPixelWord)
-    `elsif EDGE_THRESHOLD
-        .address1(s_dthResultBufferCount[10:2]),// divide by 4 to get the correct address
-        .address2(s_busSelectReg),
-        .clock1(pclk),
-        .clock2(clock),
-        .writeEnable(s_we_sramDthTransfert),
-        .dataIn1(DthByte),
         .dataOut2(s_busPixelWord)
     `else
         .address1(s_pixelCountReg[10:2]), 
@@ -399,11 +424,13 @@ module camera #(
                                 (s_doWrite == 1'b1) ? s_burstCountReg - 9'd1 : s_burstCountReg;
     s_busSelectReg         <= (s_stateMachineReg == IDLE) ? 9'd0 : (s_doWrite == 1'b1) ? s_busSelectReg + 9'd1 : s_busSelectReg;
 `ifdef GRAYSCALE_U8
-    s_nrOfPixelsPerLineReg <= (s_newLine == 1'b1) ? s_pixelCountValueReg[10:3] : 
-                                (s_stateMachineReg == INIT_BURST1) ? s_nrOfPixelsPerLineReg - {1'b0,s_burstSizeNext} : s_nrOfPixelsPerLineReg;
-`elsif EDGE_THRESHOLD
+  `ifdef EDGE_THRESHOLD
     s_nrOfPixelsPerLineReg <= (s_newLine == 1'b1) ? s_pixelCountValueReg[10:5] : 
                                 (s_stateMachineReg == INIT_BURST1) ? s_nrOfPixelsPerLineReg - {1'b0,s_burstSizeNext} : s_nrOfPixelsPerLineReg;
+  `else
+     s_nrOfPixelsPerLineReg <= (s_newLine == 1'b1) ? s_pixelCountValueReg[10:3] : 
+                                (s_stateMachineReg == INIT_BURST1) ? s_nrOfPixelsPerLineReg - {1'b0,s_burstSizeNext} : s_nrOfPixelsPerLineReg;
+  `endif  
 `else
     s_nrOfPixelsPerLineReg <= (s_newLine == 1'b1) ? s_pixelCountValueReg[10:2] : 
                                 (s_stateMachineReg == INIT_BURST1) ? s_nrOfPixelsPerLineReg - {1'b0,s_burstSizeNext} : s_nrOfPixelsPerLineReg;
