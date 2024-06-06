@@ -4,8 +4,10 @@
 #include <swap.h>
 #include <vga.h>
 
-#define USE_OPTIC_FLOW_CI
-#define USE_DMA
+//#define USE_OPTIC_FLOW_CI
+//#define USE_DMA
+//#define DERIV_C
+#define RAW_STREAM
 
 #define GRAD_THRESHOLD 10
 
@@ -68,7 +70,7 @@ int main() {
     uint32_t *prev_grad_bin = grad_buffers[1 - current_buffer];
 
     // Convert grayscale to binary gradients
-
+    #ifdef DERIV_C
     // Skip first and last rows and cols
     for (int pixel_index = camParams.nrOfPixelsPerLine;
          pixel_index <
@@ -113,7 +115,7 @@ int main() {
                  : [out1] "=r"(idle)
                  : [in1] "r"(2), [in2] "r"(1 << 10));
     printf("Grad: Cycles: %d Stall: %d Idle: %d\n", cycles, stall, idle);
-
+    #endif
     // Reset counters
     asm volatile("l.nios_rrr r0,r0,%[in2],0xC" ::[in2] "r"(7));
 
@@ -317,16 +319,25 @@ int main() {
         const int pixel_index = (base_index << 4) + j;
         const int bit_index = (pixel_index & 15) << 1;
 
-        // 1-bit flow direction
-        uint8_t left_flow = (left >> bit_index) & 1;
-        uint8_t right_flow = (right >> bit_index) & 1;
-        uint8_t up_flow = (up >> (bit_index + 1)) & 1;
-        uint8_t down_flow = (down >> (bit_index + 1)) & 1;
+        #ifdef RAW_STREAM
+          uint8_t dthx = (grad_bin[base_index] >> bit_index) & 1;
+          uint8_t dthy = (grad_bin[base_index] >> bit_index+1) & 1;
+          const uint8_t red = dthx*31;
+          const uint8_t green = dthy*31;
+          const uint8_t blue = 0;
+          rgb565[pixel_index] = swap_u16((red << 11) | (green << 5) | blue);
+        #else
+          // 1-bit flow direction
+          uint8_t left_flow = (left >> bit_index) & 1;
+          uint8_t right_flow = (right >> bit_index) & 1;
+          uint8_t up_flow = (up >> (bit_index + 1)) & 1;
+          uint8_t down_flow = (down >> (bit_index + 1)) & 1;
 
-        const uint8_t red = (left_flow << 4) | (down_flow << 4);
-        const uint8_t green = (right_flow << 5) | (down_flow << 5);
-        const uint8_t blue = (up_flow << 4) | (down_flow << 4);
-        rgb565[pixel_index] = swap_u16((red << 11) | (green << 5) | blue);
+          const uint8_t red = (left_flow << 4) | (down_flow << 4);
+          const uint8_t green = (right_flow << 5) | (down_flow << 5);
+          const uint8_t blue = (up_flow << 4) | (down_flow << 4);
+          rgb565[pixel_index] = swap_u16((red << 11) | (green << 5) | blue);
+        #endif
       }
     }
 #endif

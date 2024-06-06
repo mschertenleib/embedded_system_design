@@ -284,7 +284,7 @@ module camera #(
     assign thdx_line[imgwidth-1] = 1'b0;
     assign thdy_line[0] = 1'b0;
     assign thdy_line[imgwidth-1] = 1'b0;
-    wire s_we_sramDthTransfert = s_dthResultBufferCount < imgwidth-1;
+    wire s_we_sramDthTransfert = (s_dthResultBufferCount < imgwidth-1);// & s_weLineBuffer;
 
     //160*4 px per line, -> 3*160*4 = 1920 px per strip
 
@@ -306,6 +306,7 @@ module camera #(
         thresh_dx <= thdx_line;
         thresh_dy <= thdy_line;
         s_dthResultBufferCount <= 0;
+        s_sramDTHaddr <= 0;
       end
       if(s_we_sramDthTransfert)begin
         `ifdef testpattern
@@ -329,6 +330,7 @@ module camera #(
                     thresh_dx[s_dthResultBufferCount+15],thresh_dy[s_dthResultBufferCount+15]};
         `endif
         s_dthResultBufferCount <= s_dthResultBufferCount + 3'd16;
+        s_sramDTHaddr <= s_sramDTHaddr + 6'b1;
       end
     end
   `endif 
@@ -337,12 +339,12 @@ module camera #(
   dualPortRam2k lineBuffer (
     `ifdef GRAYSCALE_U8
       `ifdef EDGE_THRESHOLD
-          .address1(s_dthResultBufferCount[10:5]),// divide by 4 to get the correct address
+          .address1(s_sramDTHaddr),// divide by 4 to get the correct address
           .address2(s_busSelectReg),
           .clock1(pclk),
           .clock2(clock),
           .writeEnable(s_we_sramDthTransfert),
-          .dataIn1(DthByte),
+          .dataIn1(DthWord),
           .dataOut2(s_busPixelWord)
       `else
           .address1(s_pixelCountReg[10:4]),
