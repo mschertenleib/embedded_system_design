@@ -184,6 +184,10 @@ int main() {
         asm volatile("l.nios_rrr %[out1],%[in1],r0,20"
                      : [out1] "=r"(prev_row_down)
                      : [in1] "r"(120 + base_index));
+        row_up = swap_u32(row_up);
+        row_down = swap_u32(row_down);
+        prev_row_up = swap_u32(prev_row_up);
+        prev_row_down = swap_u32(prev_row_down);
 
         uint32_t valueA;
         uint32_t valueB;
@@ -207,7 +211,6 @@ int main() {
           asm volatile("l.nios_rrr %[out1],%[in1],%[in2],0x31"
                        : [out1] "=r"(result)
                        : [in1] "r"(flow_0), [in2] "r"(i));
-
           asm volatile("l.nios_rrr r0,%[in1],%[in2],20" ::[in1] "r"(
                            writeBit | (160 + pixel_index)),
                        [in2] "r"(result));
@@ -217,7 +220,6 @@ int main() {
           asm volatile("l.nios_rrr %[out1],%[in1],%[in2],0x31"
                        : [out1] "=r"(result)
                        : [in1] "r"(flow_1), [in2] "r"(i));
-
           asm volatile("l.nios_rrr r0,%[in1],%[in2],20" ::[in1] "r"(
                            writeBit | (160 + pixel_index)),
                        [in2] "r"(result));
