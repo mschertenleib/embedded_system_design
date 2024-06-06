@@ -230,7 +230,7 @@ int main() {
           [in2] "r"(320));
       asm volatile("l.nios_rrr r0,%[in1],%[in2],20" ::[in1] "r"(
                        busStartAddress | writeBit),
-                   [in2] "r"(rgb565[(row << 9) + (row << 7)]));
+                   [in2] "r"((uint32_t)&rgb565[(row << 9) + (row << 7)]));
       asm volatile("l.nios_rrr r0,%[in1],%[in2],20" ::[in1] "r"(
                        memoryStartAddress | writeBit),
                    [in2] "r"(160));
