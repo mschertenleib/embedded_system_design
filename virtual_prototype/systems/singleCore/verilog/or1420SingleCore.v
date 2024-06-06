@@ -334,9 +334,11 @@ module or1420SingleCore ( input wire         clock12MHz,
   wire        s_opticFlowDone;
   wire[31:0]  s_opticFlowColorResult;
   wire        s_opticFlowColorDone;
+  wire[31:0]  s_absDiffResult;
+  wire        s_absDiffDone;
 
-  assign s_cpu1CiDone = s_hdmiDone | s_swapByteDone | s_flashDone | s_cpuFreqDone | s_i2cCiDone | s_delayCiDone | s_camCiDone | s_profileDone | s_rgb2grayDone | s_ramDmaDone | s_opticFlowDone | s_opticFlowColorDone;
-  assign s_cpu1CiResult = s_hdmiResult | s_swapByteResult | s_flashResult | s_cpuFreqResult | s_i2cCiResult | s_camCiResult | s_delayResult | s_profileResult | s_rgb2grayResult | s_ramDmaResult | s_opticFlowResult | s_opticFlowColorResult; 
+  assign s_cpu1CiDone = s_hdmiDone | s_swapByteDone | s_flashDone | s_cpuFreqDone | s_i2cCiDone | s_delayCiDone | s_camCiDone | s_profileDone | s_rgb2grayDone | s_ramDmaDone | s_opticFlowDone | s_opticFlowColorDone | s_absDiffDone;
+  assign s_cpu1CiResult = s_hdmiResult | s_swapByteResult | s_flashResult | s_cpuFreqResult | s_i2cCiResult | s_camCiResult | s_delayResult | s_profileResult | s_rgb2grayResult | s_ramDmaResult | s_opticFlowResult | s_opticFlowColorResult | s_absDiffResult; 
 
   or1420Top #( .NOP_INSTRUCTION(32'h1500FFFF)) cpu1
              (.cpuClock(s_systemClock),
@@ -529,6 +531,14 @@ module or1420SingleCore ( input wire         clock12MHz,
                 .ciN(s_cpu1CiN),
                 .done(s_opticFlowColorDone),
                 .result(s_opticFlowColorResult));
+  
+  absDiffCI #(.customInstructionId(8'h32)) absDiff
+                (.start(s_cpu1CiStart),
+                .valueA(s_cpu1CiDataA),
+                .valueB(s_cpu1CiDataB),
+                .ciN(s_cpu1CiN),
+                .done(s_absDiffDone),
+                .result(s_absDiffResult));
 
 
    /*
