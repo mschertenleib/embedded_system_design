@@ -6,8 +6,8 @@
 
 //#define USE_DMA_FOR_GRAD
 //#define USE_CI_FOR_GRAD
-#define USE_OPTIC_FLOW_CI
-#define USE_DMA_FOR_FLOW
+//#define USE_OPTIC_FLOW_CI
+//#define USE_DMA_FOR_FLOW
 
 #define GRAD_THRESHOLD 10
 
@@ -127,7 +127,7 @@ int main() {
 
         for (int i = 0; i < 4; ++i) {
 
-#if USE_CI_FOR GRAD
+#ifdef USE_CI_FOR_GRAD
           uint8_t gray_left = (i == 0)
                                   ? (gray_center_prev_u32 >> 24) & 0xff
                                   : (gray_center_u32 >> ((i - 1) << 3)) & 0xff;
