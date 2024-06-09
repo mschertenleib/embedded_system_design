@@ -170,7 +170,7 @@ module camera #(
   //`define RGB565_GRAYSCALE
   `define GRAYSCALE_U8
   `define EDGE_THRESHOLD
-  `define testpattern
+  //`define testpattern
 
 `ifdef GRAYSCALE_U8
   reg [7:0] s_byte7Reg, s_byte6Reg, s_byte5Reg, s_byte4Reg, s_byte3Reg, s_byte2Reg, s_byte1Reg;
@@ -310,24 +310,24 @@ module camera #(
       end
       if(s_we_sramDthTransfert)begin
         `ifdef testpattern
-          DthWord <= {32'b00110011001100110011001100110011};
+          DthWord <= {32'b00110011000011110000000011111111};
         `else
-        DthWord <= {thresh_dx[s_dthResultBufferCount],thresh_dy[s_dthResultBufferCount],
-                    thresh_dx[s_dthResultBufferCount+1],thresh_dy[s_dthResultBufferCount+1],
-                    thresh_dx[s_dthResultBufferCount+2],thresh_dy[s_dthResultBufferCount+2],
-                    thresh_dx[s_dthResultBufferCount+3],thresh_dy[s_dthResultBufferCount+3],
-                    thresh_dx[s_dthResultBufferCount+4],thresh_dy[s_dthResultBufferCount+4],
-                    thresh_dx[s_dthResultBufferCount+5],thresh_dy[s_dthResultBufferCount+5],
-                    thresh_dx[s_dthResultBufferCount+6],thresh_dy[s_dthResultBufferCount+6],
-                    thresh_dx[s_dthResultBufferCount+7],thresh_dy[s_dthResultBufferCount+7],
-                    thresh_dx[s_dthResultBufferCount+8],thresh_dy[s_dthResultBufferCount+8],
-                    thresh_dx[s_dthResultBufferCount+9],thresh_dy[s_dthResultBufferCount+9],
-                    thresh_dx[s_dthResultBufferCount+10],thresh_dy[s_dthResultBufferCount+10],
-                    thresh_dx[s_dthResultBufferCount+11],thresh_dy[s_dthResultBufferCount+11],
-                    thresh_dx[s_dthResultBufferCount+12],thresh_dy[s_dthResultBufferCount+12],
-                    thresh_dx[s_dthResultBufferCount+13],thresh_dy[s_dthResultBufferCount+13],
-                    thresh_dx[s_dthResultBufferCount+14],thresh_dy[s_dthResultBufferCount+14],
-                    thresh_dx[s_dthResultBufferCount+15],thresh_dy[s_dthResultBufferCount+15]};
+        // DthWord <= {thresh_dx[s_dthResultBufferCount],thresh_dy[s_dthResultBufferCount],
+        //             thresh_dx[s_dthResultBufferCount+1],thresh_dy[s_dthResultBufferCount+1],
+        //             thresh_dx[s_dthResultBufferCount+2],thresh_dy[s_dthResultBufferCount+2],
+        //             thresh_dx[s_dthResultBufferCount+3],thresh_dy[s_dthResultBufferCount+3],
+        //             thresh_dx[s_dthResultBufferCount+4],thresh_dy[s_dthResultBufferCount+4],
+        //             thresh_dx[s_dthResultBufferCount+5],thresh_dy[s_dthResultBufferCount+5],
+        //             thresh_dx[s_dthResultBufferCount+6],thresh_dy[s_dthResultBufferCount+6],
+        //             thresh_dx[s_dthResultBufferCount+7],thresh_dy[s_dthResultBufferCount+7],
+        //             thresh_dx[s_dthResultBufferCount+8],thresh_dy[s_dthResultBufferCount+8],
+        //             thresh_dx[s_dthResultBufferCount+9],thresh_dy[s_dthResultBufferCount+9],
+        //             thresh_dx[s_dthResultBufferCount+10],thresh_dy[s_dthResultBufferCount+10],
+        //             thresh_dx[s_dthResultBufferCount+11],thresh_dy[s_dthResultBufferCount+11],
+        //             thresh_dx[s_dthResultBufferCount+12],thresh_dy[s_dthResultBufferCount+12],
+        //             thresh_dx[s_dthResultBufferCount+13],thresh_dy[s_dthResultBufferCount+13],
+        //             thresh_dx[s_dthResultBufferCount+14],thresh_dy[s_dthResultBufferCount+14],
+        //             thresh_dx[s_dthResultBufferCount+15],thresh_dy[s_dthResultBufferCount+15]};
         `endif
         s_dthResultBufferCount <= s_dthResultBufferCount + 3'd16;
         s_sramDTHaddr <= s_sramDTHaddr + 6'b1;

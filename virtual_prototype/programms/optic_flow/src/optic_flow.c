@@ -8,6 +8,8 @@
 //#define USE_CI_FOR_GRAD
 //#define USE_OPTIC_FLOW_CI
 //#define USE_DMA_FOR_FLOW
+#define USE_CAMINT_FOR_GRAD
+#define NO_OPTIC_FLOW
 
 #define GRAD_THRESHOLD 10
 
@@ -62,12 +64,16 @@ int main() {
   const uint32_t statusControl = 5 << 10;
 
   while (1) {
-    takeSingleImageBlocking((uint32_t)&grayscale[0]);
+    uint32_t *grad_bin = grad_buffers[current_buffer];
+    uint32_t *prev_grad_bin = grad_buffers[1 - current_buffer];
+    #ifdef USE_CAMINT_FOR_GRAD
+      takeSingleImageBlocking((uint32_t)&grad_bin[0]);
+    #else
+      takeSingleImageBlocking((uint32_t)&grayscale[0]);
+    #endif
     // Reset counters
     asm volatile("l.nios_rrr r0,r0,%[in2],0xC" ::[in2] "r"(7));
 
-    uint32_t *grad_bin = grad_buffers[current_buffer];
-    uint32_t *prev_grad_bin = grad_buffers[1 - current_buffer];
 
     // Convert grayscale to binary gradients
 
@@ -202,6 +208,9 @@ int main() {
                    [in2] "r"(2));
       waitDMA();
     }
+#elif defined(USE_CAMINT_FOR_GRAD)
+    printf("Using camera interface for gradient computation\n");
+
 #else
     // Skip first and last rows and cols
     for (int pixel_index = camParams.nrOfPixelsPerLine;
@@ -248,7 +257,7 @@ int main() {
                  : [out1] "=r"(idle)
                  : [in1] "r"(2), [in2] "r"(1 << 10));
     printf("Grad: Cycles: %d Stall: %d Idle: %d\n", cycles, stall, idle);
-    #endif
+
     // Reset counters
     asm volatile("l.nios_rrr r0,r0,%[in2],0xC" ::[in2] "r"(7));
 
@@ -427,6 +436,24 @@ int main() {
         ++pixel_index;
       }
     }
+#elif defined(NO_OPTIC_FLOW)
+    for (int base_index = 0;
+         base_index <
+         ((camParams.nrOfLinesPerImage - 1) * camParams.nrOfPixelsPerLine) >> 4;
+         ++base_index) {
+      for (int j = 0; j < 16; ++j) {
+        const int pixel_index = (base_index << 4) + j;
+        const int bit_index = (pixel_index & 15) << 1;
+
+        rgb565[pixel_index] = 0;
+        if ((grad_bin[base_index] >> bit_index) & 1)
+          rgb565[pixel_index] |= swap_u16(0xf800);
+        if ((grad_bin[base_index] >> (bit_index + 1)) & 1)
+          rgb565[pixel_index] |= swap_u16(0x07e0);
+      }
+    }
+
+
 #else
     for (int base_index = 0;
          base_index <
@@ -453,28 +480,21 @@ int main() {
         const int pixel_index = (base_index << 4) + j;
         const int bit_index = (pixel_index & 15) << 1;
 
-        #ifdef RAW_STREAM
-          uint8_t dthx = (grad_bin[base_index] >> bit_index) & 1;
-          uint8_t dthy = (grad_bin[base_index] >> bit_index+1) & 1;
-          const uint8_t red = dthx*31;
-          const uint8_t green = dthy*31;
-          const uint8_t blue = 0;
-          rgb565[pixel_index] = swap_u16((red << 11) | (green << 5) | blue);
-        #else
-          // 1-bit flow direction
-          uint8_t left_flow = (left >> bit_index) & 1;
-          uint8_t right_flow = (right >> bit_index) & 1;
-          uint8_t up_flow = (up >> (bit_index + 1)) & 1;
-          uint8_t down_flow = (down >> (bit_index + 1)) & 1;
+        // 1-bit flow direction
+        uint8_t left_flow = (left >> bit_index) & 1;
+        uint8_t right_flow = (right >> bit_index) & 1;
+        uint8_t up_flow = (up >> (bit_index + 1)) & 1;
+        uint8_t down_flow = (down >> (bit_index + 1)) & 1;
 
         const uint8_t red = (left_flow << 4) | (down_flow << 4);
         const uint8_t green = (right_flow << 5) | (down_flow << 5);
         const uint8_t blue = (up_flow << 4) | (down_flow << 4);
-        rgb565[pixel_index] = swap_u16((red << 11) | (green << 5) | blue);
-        /*if ((grad_bin[base_index] >> bit_index) & 1)
+        //rgb565[pixel_index] = swap_u16((red << 11) | (green << 5) | blue);
+        rgb565[pixel_index] = 0;
+        if ((grad_bin[base_index] >> bit_index) & 1)
           rgb565[pixel_index] |= swap_u16(0xf800);
         if ((grad_bin[base_index] >> (bit_index + 1)) & 1)
-          rgb565[pixel_index] |= swap_u16(0x07e0);*/
+          rgb565[pixel_index] |= swap_u16(0x07e0);
       }
     }
 #endif

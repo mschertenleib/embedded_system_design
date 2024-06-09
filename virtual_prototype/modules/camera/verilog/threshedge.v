@@ -21,8 +21,8 @@ module kern_th_edge #(
     wire sy = dy[8];
 
     // Thresholding, true if dx >= 32 or dx <= -33
-    assign thdx = dx[5]^sx | dx[6]^sx | dx[7]^sx | dx[8]^sx;
-    assign thdy = dy[5]^sy | dy[6]^sy | dy[7]^sy | dy[8]^sy;
+    assign thdx = dx[3]^sx | dx[4]^sx | dx[5]^sx | dx[6]^sx | dx[7]^sx | dx[8]^sx;
+    assign thdy = dy[3]^sy | dy[4]^sy | dy[5]^sy | dy[6]^sy | dy[7]^sy | dy[8]^sy;
 endmodule
 
 module edge_detect #(parameter stripwidth = 640)(

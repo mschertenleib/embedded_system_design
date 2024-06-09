@@ -34,7 +34,7 @@ module threshedge_tb;
     endtask
     
     initial begin
-        for (integer i = 31; i <= 33 ; i = i+1) begin
+        for (integer i = 6; i <= 10 ; i = i+1) begin
             $display("###### i = %d ######",i);
             test_th(0,i,i,0);
         end
