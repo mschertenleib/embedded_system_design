@@ -4,12 +4,45 @@
 #include <swap.h>
 #include <vga.h>
 
-//#define USE_DMA_FOR_GRAD
-//#define USE_CI_FOR_GRAD
-//#define USE_OPTIC_FLOW_CI
-//#define USE_DMA_FOR_FLOW
+// ************** Configure gradient computation **************************
+
+// Stream 2-bit gradients directly from the camera (assumes the verilog
+// camera module is setup for streaming gradients).
+//#define USE_GRAD_STREAMING
+
+// Get 8-bit grayscale from the camera, convert them to gradients, using DMA for
+// memory transfers (assumes the verilog camera module is setup for streaming
+// 8-bit grayscale). Optionally, USE_CI_FOR_GRAD can also be defined to do the
+// conversion using a CI. If not defined, everything is done in pure C (memory
+// transfers and conversion). Only relevant if USE_GRAD_STREAMING is not
+// defined.
+#define USE_DMA_FOR_GRAD
+
+// Convert grayscale to gradients using the conversion CI (assumes the
+// verilog camera module is setup for streaming 8-bit grayscale). Can only be
+// activated together with USE_DMA_FOR_GRAD, and only relevant if
+// USE_GRAD_STREAMING is not defined.
+#define USE_CI_FOR_GRAD
 
 #define GRAD_THRESHOLD 10
+
+// **************** Configure flow computation ****************************
+
+// Display binary gradients as colors on the screen, and do not perform flow
+// computation.
+//#define DISPLAY_GRAD
+
+// Compute flow using DMA for memory transfers and CIs for conversions. Only
+// relevant if DISPLAY_GRAD is not defined.
+#define USE_DMA_FOR_FLOW
+
+// Compute flow using CIs for conversions, but do memory transfers using pure C
+// array accesses. Only relevant if DISPLAY_GRAD and USE_DMA_FOR_FLOW are not
+// defined.
+#define USE_OPTIC_FLOW_CI
+
+// If none of the three above symbols are defined, flow computation is done in
+// pure C, without CIs or DMA.
 
 static void waitDMA(void) {
   uint32_t status;
@@ -25,7 +58,7 @@ int main() {
   volatile uint16_t rgb565[640 * 480];
   // Input image
   volatile uint8_t grayscale[640 * 480];
-  // Binary gradients
+  // Binary gradients, double buffered for current and previous frame
   uint32_t grad_buffers[2][640 / 32 * 480 * 2];
 
   uint32_t result, cycles, stall, idle;
@@ -62,12 +95,20 @@ int main() {
   const uint32_t statusControl = 5 << 10;
 
   while (1) {
-    takeSingleImageBlocking((uint32_t)&grayscale[0]);
-    // Reset counters
-    asm volatile("l.nios_rrr r0,r0,%[in2],0xC" ::[in2] "r"(7));
 
     uint32_t *grad_bin = grad_buffers[current_buffer];
     uint32_t *prev_grad_bin = grad_buffers[1 - current_buffer];
+
+#ifdef USE_GRAD_STREAMING
+    // Binary gradient is directly computed in streaming in the camera module
+    takeSingleImageBlocking((uint32_t)grad_bin);
+
+#else
+    // We get 8-bit grayscale values from the camera module
+    takeSingleImageBlocking((uint32_t)&grayscale[0]);
+
+    // Reset counters
+    asm volatile("l.nios_rrr r0,r0,%[in2],0xC" ::[in2] "r"(7));
 
     // Convert grayscale to binary gradients
 
@@ -78,7 +119,7 @@ int main() {
         [in2] "r"(39));
 
     for (int row = 1; row < 479; ++row) {
-
+      // Read grayscale pixels into CI memory
       asm volatile(
           "l.nios_rrr r0,%[in1],%[in2],20" ::[in1] "r"(blockSize | writeBit),
           [in2] "r"(480));
@@ -112,6 +153,7 @@ int main() {
 
       for (int base_index = 1; base_index < 159; ++base_index) {
 
+        // Read grayscale pixels from CI memory to CPU registers
         asm volatile("l.nios_rrr %[out1],%[in1],r0,20"
                      : [out1] "=r"(gray_up_u32)
                      : [in1] "r"(base_index));
@@ -125,9 +167,12 @@ int main() {
         gray_center_next_u32 = swap_u32(gray_center_next_u32);
         gray_down_u32 = swap_u32(gray_down_u32);
 
+        // Iterate over each of the four 8-bit grayscale pixels of the 32-bit
+        // words.
         for (int i = 0; i < 4; ++i) {
 
 #ifdef USE_CI_FOR_GRAD
+          // Do the grayscale to binary gradient conversion
           uint8_t gray_left = (i == 0)
                                   ? (gray_center_prev_u32 >> 24) & 0xff
                                   : (gray_center_u32 >> ((i - 1) << 3)) & 0xff;
@@ -145,11 +190,13 @@ int main() {
                        : [out1] "=r"(dx_dy)
                        : [in1] "r"(d_u_r_l));
 
+          // Write 2-bit gradient into 32bit 16-gradient word
           const int bit_index = 30 - (((base_index & 0b11) << 2) + i) << 1;
           grad_bin_u32 =
               (grad_bin_u32 & ~(0b11 << bit_index)) | (dx_dy << bit_index);
 
 #else
+          // Do the grayscale to binary gradient conversion
           uint8_t gray_left = (i == 0)
                                   ? (gray_center_prev_u32 >> 24) & 0xff
                                   : (gray_center_u32 >> ((i - 1) << 3)) & 0xff;
@@ -172,12 +219,14 @@ int main() {
             dy = gray_down - gray_up > GRAD_THRESHOLD;
           }
 
+          // Write 2-bit gradient into 32bit 16-gradient word
           const int bit_index = 30 - (((base_index & 0b11) << 2) + i) << 1;
           grad_bin_u32 = (grad_bin_u32 & ~(0b11 << bit_index)) |
                          (dx << bit_index) | (dy << (bit_index + 1));
 #endif
         }
 
+        // Write gradients into CI memory
         if (base_index & 0b11 == 0b11) {
           asm volatile("l.nios_rrr r0,%[in1],%[in2],20" ::[in1] "r"(
                            writeBit | (base_index >> 2)),
@@ -188,6 +237,7 @@ int main() {
         gray_center_u32 = gray_center_next_u32;
       }
 
+      // Store gradients to buffer
       asm volatile(
           "l.nios_rrr r0,%[in1],%[in2],20" ::[in1] "r"(blockSize | writeBit),
           [in2] "r"(40));
@@ -209,6 +259,7 @@ int main() {
          (camParams.nrOfLinesPerImage - 1) * camParams.nrOfPixelsPerLine;
          ++pixel_index) {
 
+      // Compute binary gradients
       const uint8_t gray_left = grayscale[pixel_index - 1];
       const uint8_t gray_right = grayscale[pixel_index + 1];
       const uint8_t gray_up =
@@ -229,6 +280,7 @@ int main() {
         dy = gray_down - gray_up > GRAD_THRESHOLD;
       }
 
+      // Write 2-bit gradient into 32bit 16-gradient word buffer
       const int base_bin_index = pixel_index >> 4;
       const int bit_index = (pixel_index & 15) << 1;
       grad_bin[base_bin_index] =
@@ -249,12 +301,33 @@ int main() {
                  : [in1] "r"(2), [in2] "r"(1 << 10));
     printf("Grad: Cycles: %d Stall: %d Idle: %d\n", cycles, stall, idle);
 
+#endif
+
     // Reset counters
     asm volatile("l.nios_rrr r0,r0,%[in2],0xC" ::[in2] "r"(7));
 
-    // Convert binary gradients to optic flow
+    // Convert binary gradients to optic flow, or simply display gradients
 
-#ifdef USE_DMA_FOR_FLOW
+#ifdef DISPLAY_GRAD
+
+    for (int base_index = 0;
+         base_index <
+         ((camParams.nrOfLinesPerImage - 1) * camParams.nrOfPixelsPerLine) >> 4;
+         ++base_index) {
+      for (int j = 0; j < 16; ++j) {
+        const int pixel_index = (base_index << 4) + j;
+        const int bit_index = (pixel_index & 15) << 1;
+
+        uint16_t pixel = 0;
+        if ((grad_bin[base_index] >> bit_index) & 1)
+          pixel |= swap_u16(0xf800);
+        if ((grad_bin[base_index] >> (bit_index + 1)) & 1)
+          pixel |= swap_u16(0x07e0);
+        rgb565[pixel_index] = pixel;
+      }
+    }
+
+#elif defined(USE_DMA_FOR_FLOW)
 
     uint32_t *rgb565_as_u32 = (uint32_t *)&rgb565[0];
 
@@ -273,6 +346,7 @@ int main() {
 
     for (int row = 0; row < 479; ++row) {
 
+      // Read gradients from current image into CI memory
       asm volatile(
           "l.nios_rrr r0,%[in1],%[in2],20" ::[in1] "r"(blockSize | writeBit),
           [in2] "r"(80));
@@ -287,6 +361,7 @@ int main() {
                    [in2] "r"(1));
       waitDMA();
 
+      // Read gradients from previous image into CI memory
       asm volatile(
           "l.nios_rrr r0,%[in1],%[in2],20" ::[in1] "r"(blockSize | writeBit),
           [in2] "r"(80));
@@ -304,6 +379,9 @@ int main() {
 
       for (int base_index = 0; base_index < 40; ++base_index) {
 
+        // Read the 16*2bit = 32bit gradient values for 16 pixels for the four
+        // rows {up, down, previous up, previous down}, from CI memory to CPU
+        // registers.
         uint32_t row_up;
         uint32_t row_down;
         uint32_t prev_row_up;
@@ -325,6 +403,9 @@ int main() {
         prev_row_up = swap_u32(prev_row_up);
         prev_row_down = swap_u32(prev_row_down);
 
+        // Do the gradients to flow conversion, 8 pixels = 8*2bits at a time
+        // (because the result of the CI is 32 bits, and each pixel flow is 4
+        // bits for the 4 combinable directions).
         uint32_t valueA;
         uint32_t valueB;
         valueA = ((row_up & 0xffff) << 16) | (row_down & 0xffff);
@@ -342,6 +423,9 @@ int main() {
                      : [in1] "r"(valueA), [in2] "r"(valueB));
         const uint32_t flow_1 = result;
 
+        // Convert 4-bit flow directions to RGB565 colors for visualization, and
+        // store them in the CI memory. In total, this represents 16 pixels (4
+        // times 2 pixels for each of the following for-loops).
         int pixel_index = base_index << 3;
         for (int i = 0; i < 4; ++i) {
           asm volatile("l.nios_rrr %[out1],%[in1],%[in2],0x31"
@@ -363,6 +447,7 @@ int main() {
         }
       }
 
+      // Transfer RGB565 pixels to the framebuffer.
       asm volatile(
           "l.nios_rrr r0,%[in1],%[in2],20" ::[in1] "r"(blockSize | writeBit),
           [in2] "r"(320));
@@ -389,11 +474,17 @@ int main() {
       const int base_index_next_row =
           base_index + (camParams.nrOfPixelsPerLine >> 4);
 
+      // Read the 16*2bit = 32bit gradient values for 16 pixels for the four
+      // rows {up, down, previous up, previous down}, from CI memory to CPU
+      // registers.
       const uint32_t row_up = grad_bin[base_index];
       const uint32_t row_down = grad_bin[base_index_next_row];
       const uint32_t prev_row_up = prev_grad_bin[base_index];
       const uint32_t prev_row_down = prev_grad_bin[base_index_next_row];
 
+      // Do the gradients to flow conversion, 8 pixels = 8*2bits at a time
+      // (because the result of the CI is 32 bits, and each pixel flow is 4
+      // bits for the 4 combinable directions).
       uint32_t valueA;
       uint32_t valueB;
       valueA = ((row_up & 0xffff) << 16) | (row_down & 0xffff);
@@ -427,12 +518,16 @@ int main() {
         ++pixel_index;
       }
     }
+
 #else
+
     for (int base_index = 0;
          base_index <
          ((camParams.nrOfLinesPerImage - 1) * camParams.nrOfPixelsPerLine) >> 4;
          ++base_index) {
 
+      // Do the gradient to flow conversion for 16 pixels at a time (16*2bit
+      // inputs for each row).
       const uint32_t left_and =
           grad_bin[base_index] & (prev_grad_bin[base_index] >> 2);
       const uint32_t right_and =
@@ -449,6 +544,8 @@ int main() {
       const uint32_t up = up_and & ~down_and;
       const uint32_t down = down_and & ~up_and;
 
+      // Convert 4*1bit flow directions to RGB565 colors and store them in the
+      // framebuffer.
       for (int j = 0; j < 16; ++j) {
         const int pixel_index = (base_index << 4) + j;
         const int bit_index = (pixel_index & 15) << 1;
@@ -463,14 +560,11 @@ int main() {
         const uint8_t green = (right_flow << 5) | (down_flow << 5);
         const uint8_t blue = (up_flow << 4) | (down_flow << 4);
         rgb565[pixel_index] = swap_u16((red << 11) | (green << 5) | blue);
-        /*if ((grad_bin[base_index] >> bit_index) & 1)
-          rgb565[pixel_index] |= swap_u16(0xf800);
-        if ((grad_bin[base_index] >> (bit_index + 1)) & 1)
-          rgb565[pixel_index] |= swap_u16(0x07e0);*/
       }
     }
 #endif
 
+    // Double buffering index switching.
     current_buffer = 1 - current_buffer;
 
     // Read counters
