@@ -87,7 +87,19 @@ The files corresponding to our implementation are the following:
 | Optic flow CI, no DMA   | 10'447'509 | 7'918'379    | 4'530'602       |
 | Optic flow CI, with DMA | 4'898'731  | 733'720      | 1'751'847       |
 
-TODO: capture d'écran de l'image qu'on obtient + photo de ce qu'on filme
+### Images
+
+Here is the box that was filmed:
+
+![box_photo](box_photo.png)
+
+On this capture from the video output, the box is moving towards the upper right corner (green color for vertical edges => right, blue color for horizontal edges => up):
+
+![box_up_right](box_up_right.png)
+
+On this capture from the video output, the box is moving down (white color for horizontal edges => down):
+
+![box_down](box_down.png)
 
 ## Conclusions
 
