@@ -6,18 +6,18 @@ EPFL CS-476 Embedded System Design project by Gilles Regamey and Mathieu Scherte
 
 Optic flow was first used to describe the visual stimulus provided to animals moving through the world. It is usually used for optical mouses and visual odometry.
 
-For a pixel at location (x,y,t) with intensity I(x,y,t) will have moved by Δx, Δy and Δt between two image frames
+A pixel at location (x,y,t) with intensity I(x,y,t) will have moved by Δx, Δy and Δt between two image frames. Assuming the movement to be small, the linearized image constraint at I(x,y,t) is:
 
-Assuming the movement to be small, the image constraint at I(x,y,t) linearized is
+$$ \frac{\partial I}{\partial x}\frac{\Delta x}{\Delta t} + \frac{\partial I}{\partial y}\frac{\Delta y}{\Delta t} + \frac{\partial I}{\partial t} = 0 $$
 
-Need for an additional constraint to solve for optimal Δx, Δy , Usually by maximizing cross correlation or minimizing image differences.
+There is a need for an additional constraint to solve for the optimal Δx and Δy, usually by maximizing cross correlation or minimizing image differences.
 
 **Explored solutions:**
 
-- Gradient methods: out of reach
+- Gradient methods: iterative and require powerful floating point operations, out of reach
 - Image Interpolation: requires compromises (needs multiplications and divisions, quite high memory usage)
-- Elementary Motion Detector: biologically inspired, analog
-- Binary Elementary Motion Detector: efficient, fast, 1 pixel
+- Elementary Motion Detector: biologically inspired, efficient, but naturally analog
+- Binary Elementary Motion Detector: efficient, fast
 
 ## Methods
 
@@ -65,7 +65,7 @@ We obtain the following performance results:
 ### 8-bit grayscale to binary gradient
 
 |                 | Cycles     | Stall cycles | Bus idle cycles |
-|-----------------|------------|--------------|-----------------|
+|----------------:|-----------:|-------------:|----------------:|
 | Pure C          | 87'074'811 | 67'126'746   | 35'911'724      |
 | With DMA        | 20'117'809 | 399'151      | 13'998'973      |
 | With DMA and CI | 14'924'915 | 358'056      | 10'247'412      |
@@ -74,7 +74,7 @@ We obtain the following performance results:
 ### Binary gradient to binary flow direction
 
 |                         | Cycles     | Stall cycles | Bus idle cycles |
-|-------------------------|------------|--------------|-----------------|
+|------------------------:|-----------:|-------------:|----------------:|
 | Pure C                  | 25'640'805 | 14'374'713   | 14'398'432      |
 | Optic flow CI, no DMA   | 10'447'509 | 7'918'379    | 4'530'602       |
 | Optic flow CI, with DMA | 4'898'731  | 733'720      | 1'751'847       |
