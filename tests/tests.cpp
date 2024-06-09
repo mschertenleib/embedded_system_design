@@ -10,8 +10,10 @@
 #define HEIGHT 480
 #define GRAD_THRESHOLD 20
 
-int main() {
-  constexpr struct camParameters {
+int main()
+{
+  constexpr struct camParameters
+  {
     int nrOfPixelsPerLine;
     int nrOfLinesPerImage;
   } camParams{.nrOfPixelsPerLine = WIDTH, .nrOfLinesPerImage = HEIGHT};
@@ -20,7 +22,8 @@ int main() {
   cap.set(cv::CAP_PROP_FRAME_WIDTH, WIDTH);
   cap.set(cv::CAP_PROP_FRAME_HEIGHT, HEIGHT);
 
-  if (!cap.isOpened()) {
+  if (!cap.isOpened())
+  {
     std::cout << "Failed to open capture" << std::endl;
     return -1;
   }
@@ -34,10 +37,12 @@ int main() {
   std::uint32_t grad_buffers[2][WIDTH / 32 * HEIGHT * 2]{};
   int current_buffer = 0;
 
-  while (cap.isOpened()) {
+  while (cap.isOpened())
+  {
     const auto current_time = std::chrono::steady_clock::now();
     const auto elapsed_time = current_time - last_time;
-    if (elapsed_time < target_frame_time) {
+    if (elapsed_time < target_frame_time)
+    {
       std::this_thread::sleep_for(target_frame_time - elapsed_time);
     }
     last_time +=
@@ -46,7 +51,8 @@ int main() {
 
     cv::Mat frame;
     bool ret = cap.read(frame);
-    if (!ret) {
+    if (!ret)
+    {
       std::cout << "Cannot read frame\n";
       break;
     }
@@ -67,7 +73,8 @@ int main() {
     for (int pixel_index = camParams.nrOfPixelsPerLine;
          pixel_index <
          (camParams.nrOfLinesPerImage - 1) * camParams.nrOfPixelsPerLine;
-         ++pixel_index) {
+         ++pixel_index)
+    {
 
       const uint8_t gray_left = grayscale[pixel_index - 1];
       const uint8_t gray_right = grayscale[pixel_index + 1];
@@ -77,15 +84,21 @@ int main() {
           grayscale[pixel_index + camParams.nrOfPixelsPerLine];
 
       uint8_t dx;
-      if (gray_right >= gray_left) {
+      if (gray_right >= gray_left)
+      {
         dx = gray_right - gray_left > GRAD_THRESHOLD;
-      } else {
+      }
+      else
+      {
         dx = gray_left - gray_right > GRAD_THRESHOLD;
       }
       uint8_t dy;
-      if (gray_up >= gray_down) {
+      if (gray_up >= gray_down)
+      {
         dy = gray_up - gray_down > GRAD_THRESHOLD;
-      } else {
+      }
+      else
+      {
         dy = gray_down - gray_up > GRAD_THRESHOLD;
       }
 
@@ -103,7 +116,8 @@ int main() {
     for (int base_index = 0;
          base_index <
          ((camParams.nrOfLinesPerImage - 1) * camParams.nrOfPixelsPerLine) >> 4;
-         ++base_index) {
+         ++base_index)
+    {
 
       const int base_index_next_row =
           base_index + (camParams.nrOfPixelsPerLine >> 4);
@@ -122,7 +136,8 @@ int main() {
       const uint32_t up = up_and & ~down_and;
       const uint32_t down = down_and & ~up_and;
 
-      for (int j = 0; j < 16; ++j) {
+      for (int j = 0; j < 16; ++j)
+      {
         const int pixel_index = (base_index << 4) + j;
         const int bit_index = (pixel_index & 15) << 1;
 

@@ -36,9 +36,9 @@ def as_color(
     corr_x: np.ndarray,
     corr_y: np.ndarray,
     scale: int,
-    draw_arrow:bool=False,
-    mean_size: int=11,
-    arrow_scale: float=50.0,
+    draw_arrow: bool = False,
+    mean_size: int = 11,
+    arrow_scale: float = 50.0,
 ) -> np.ndarray:
     img = np.zeros((HEIGHT, WIDTH, 3), dtype=np.uint8)
     img[:, :, 1] = np.maximum(corr_x, 0) * scale
@@ -55,8 +55,12 @@ def as_color(
                         + int(
                             np.mean(
                                 corr_x[
-                                    y - mean_size // 2 : y + (mean_size - mean_size // 2),
-                                    x - mean_size // 2 : x + (mean_size - mean_size // 2),
+                                    y
+                                    - mean_size // 2 : y
+                                    + (mean_size - mean_size // 2),
+                                    x
+                                    - mean_size // 2 : x
+                                    + (mean_size - mean_size // 2),
                                 ]
                             )
                             * scale
@@ -67,8 +71,12 @@ def as_color(
                         + int(
                             np.mean(
                                 corr_y[
-                                    y - mean_size // 2 : y + (mean_size - mean_size // 2),
-                                    x - mean_size // 2 : x + (mean_size - mean_size // 2),
+                                    y
+                                    - mean_size // 2 : y
+                                    + (mean_size - mean_size // 2),
+                                    x
+                                    - mean_size // 2 : x
+                                    + (mean_size - mean_size // 2),
                                 ]
                             )
                             * scale
@@ -158,7 +166,12 @@ def main():
         img[:HEIGHT, WIDTH:, 1] = grad_y
         img[HEIGHT:, :WIDTH, :] = as_color(corr_x, corr_y, scale=255)
         img[HEIGHT:, WIDTH:, :] = as_color(
-            total_corr_x, total_corr_y, scale=15, draw_arrow=True, mean_size=20, arrow_scale=50.0
+            total_corr_x,
+            total_corr_y,
+            scale=15,
+            draw_arrow=True,
+            mean_size=20,
+            arrow_scale=50.0,
         )
 
         cv2.imshow("img", img)
