@@ -58,6 +58,16 @@ Ideally, we would implement a buffer with two bits per pixel directly in the cam
 The conversion from binary gradients to optic flow and then colors for visualization is done on the CPU. We test different implementations: using a pure C implementation, using custom instructions for conversions, as well as using DMA for memory transfers.
 We do the same tests for optionally doing the grayscale to binary gradient conversion on the CPu rather than in a streaming fashion.
 
+### Files
+
+The files corresponding to our implementation are the following:
+
+- [tests](tests) for tests in C++/Python
+- [virtual_prototype/programms/optic_flow](virtual_prototype/programms/optic_flow) for the optic flow C program
+- [virtual_prototype/modules/optic_flow](virtual_prototype/modules/optic_flow) for the optic flow custom instructions and corresponding testbenches
+- [virtual_prototype/modules/camera](virtual_prototype/modules/camera) for the streaming implementation in the camera module
+- The custom instructions were integrated in [virtual_prototype/systems/singleCore](virtual_prototype/systems/singleCore)
+
 ## Results
 
 ### 8-bit grayscale to binary gradient

@@ -169,7 +169,7 @@ module camera #(
 
   //`define RGB565_GRAYSCALE
   `define GRAYSCALE_U8
-  `define EDGE_THRESHOLD
+  //`define EDGE_THRESHOLD
   //`define testpattern
 
 `ifdef GRAYSCALE_U8
